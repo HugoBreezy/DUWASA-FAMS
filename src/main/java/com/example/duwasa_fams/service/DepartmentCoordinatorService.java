@@ -28,6 +28,7 @@ public class DepartmentCoordinatorService {
     private final ApplicationHistoryRepository historyRepository;
     private final NotificationRepository notificationRepository;
     private final PlacementLetterRepository placementLetterRepository;
+    private final PlacementLetterPdfService placementLetterPdfService;
 
     public DepartmentCoordinatorService(
             DepartmentCoordinatorRepository coordinatorRepository,
@@ -35,7 +36,8 @@ public class DepartmentCoordinatorService {
             DepartmentRepository departmentRepository,
             ApplicationHistoryRepository historyRepository,
             NotificationRepository notificationRepository,
-            PlacementLetterRepository placementLetterRepository) {
+            PlacementLetterRepository placementLetterRepository,
+            PlacementLetterPdfService placementLetterPdfService) {
 
         this.coordinatorRepository = coordinatorRepository;
         this.applicationRepository = applicationRepository;
@@ -43,6 +45,7 @@ public class DepartmentCoordinatorService {
         this.historyRepository = historyRepository;
         this.notificationRepository = notificationRepository;
         this.placementLetterRepository = placementLetterRepository;
+        this.placementLetterPdfService = placementLetterPdfService;
     }
 
     // Get all coordinators
@@ -224,7 +227,7 @@ public class DepartmentCoordinatorService {
 
         notificationRepository.save(notification);
 
-        // Generate placement letter record
+        // Generate placement letter
         createPlacementLetter(savedApplication);
 
         return savedApplication;
@@ -305,7 +308,7 @@ public class DepartmentCoordinatorService {
         return savedApplication;
     }
 
-    // Create placement letter record
+    // Create placement letter record and PDF
     private PlacementLetter createPlacementLetter(
             FieldApplication application) {
 
@@ -329,7 +332,20 @@ public class DepartmentCoordinatorService {
                         + ".pdf"
         );
 
-        return placementLetterRepository.save(letter);
+        // Save first so that the letter has an ID
+        PlacementLetter savedLetter =
+                placementLetterRepository.save(letter);
+
+        // Generate actual PDF file
+        String filePath =
+                placementLetterPdfService.generatePlacementLetter(
+                        savedLetter
+                );
+
+        // Store generated PDF path in database
+        savedLetter.setFilePath(filePath);
+
+        return placementLetterRepository.save(savedLetter);
     }
 
     // Delete coordinator
