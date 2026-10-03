@@ -93,24 +93,27 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
-                        /*
-                         * PUBLIC
-                         */
+                        // =================================================
+                        // PUBLIC
+                        // =================================================
+
                         .requestMatchers(
                                 "/api/users/register",
                                 "/api/users/login"
                         ).permitAll()
 
-                        /*
-                         * SYSTEM ADMIN
-                         */
+                        // =================================================
+                        // SYSTEM ADMIN
+                        // =================================================
+
                         .requestMatchers(
                                 "/api/admin/**"
                         ).hasRole("SYSTEM_ADMIN")
 
-                        /*
-                         * HR OFFICER
-                         */
+                        // =================================================
+                        // HR OFFICER
+                        // =================================================
+
                         .requestMatchers(
                                 "/api/applications/hr-review",
                                 "/api/applications/*/validate",
@@ -120,25 +123,29 @@ public class SecurityConfig {
                                 "/api/applications/*/reject-by-hr"
                         ).hasRole("HR_OFFICER")
 
-                        /*
-                         * DEPARTMENT COORDINATOR
-                         */
+                        // =================================================
+                        // DEPARTMENT COORDINATOR
+                        // =================================================
+
                         .requestMatchers(
                                 "/api/department-coordinators/**"
                         ).hasRole(
                                 "DEPARTMENT_COORDINATOR"
                         )
 
-                        /*
-                         * STUDENT
-                         */
+                        // =================================================
+                        // STUDENT
+                        // =================================================
+
                         .requestMatchers(
-                                "/api/students/**"
+                                "/api/students/**",
+                                "/api/applications/student/**"
                         ).hasRole("STUDENT")
 
-                        /*
-                         * EVERYTHING ELSE
-                         */
+                        // =================================================
+                        // EVERYTHING ELSE
+                        // =================================================
+
                         .anyRequest().authenticated()
                 )
 

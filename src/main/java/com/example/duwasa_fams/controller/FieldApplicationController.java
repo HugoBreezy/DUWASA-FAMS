@@ -63,6 +63,21 @@ public class FieldApplicationController {
     }
 
     // =========================================================
+    // GET APPLICATIONS FOR STUDENT
+    // =========================================================
+
+    @GetMapping("/student/{studentId}")
+    public ResponseEntity<List<FieldApplication>>
+    getApplicationsByStudent(
+            @PathVariable Integer studentId) {
+
+        return ResponseEntity.ok(
+                fieldApplicationService
+                        .getApplicationsByStudent(studentId)
+        );
+    }
+
+    // =========================================================
     // GET APPLICATION BY ID
     // =========================================================
 

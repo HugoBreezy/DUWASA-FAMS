@@ -531,6 +531,17 @@ public class FieldApplicationService {
     }
 
     // =========================================================
+    // GET APPLICATIONS FOR STUDENT
+    // =========================================================
+
+    public List<FieldApplication> getApplicationsByStudent(
+            Integer studentId) {
+
+        return fieldApplicationRepository
+                .findByStudent_StudentId(studentId);
+    }
+
+    // =========================================================
     // UPDATE APPLICATION
     // =========================================================
 

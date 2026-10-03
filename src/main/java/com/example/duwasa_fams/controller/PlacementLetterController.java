@@ -27,12 +27,10 @@ public class PlacementLetterController {
         this.placementLetterService = placementLetterService;
     }
 
-    /**
-     * Generate and save placement letter.
-     *
-     * This endpoint saves the placement letter,
-     * generates its PDF and stores the PDF path.
-     */
+    // =========================================================
+    // GENERATE AND SAVE PLACEMENT LETTER
+    // =========================================================
+
     @PostMapping("/generate")
     public ResponseEntity<PlacementLetter> generateLetter(
             @RequestBody PlacementLetter letter) {
@@ -43,9 +41,10 @@ public class PlacementLetterController {
         return ResponseEntity.ok(generatedLetter);
     }
 
-    /**
-     * Get all placement letters.
-     */
+    // =========================================================
+    // GET ALL PLACEMENT LETTERS
+    // =========================================================
+
     @GetMapping
     public ResponseEntity<List<PlacementLetter>> getAllLetters() {
 
@@ -54,9 +53,10 @@ public class PlacementLetterController {
         );
     }
 
-    /**
-     * Get placement letter by ID.
-     */
+    // =========================================================
+    // GET PLACEMENT LETTER BY ID
+    // =========================================================
+
     @GetMapping("/{id}")
     public ResponseEntity<PlacementLetter> getLetterById(
             @PathVariable Integer id) {
@@ -69,9 +69,10 @@ public class PlacementLetterController {
                 );
     }
 
-    /**
-     * Get placement letter by application.
-     */
+    // =========================================================
+    // GET PLACEMENT LETTER BY APPLICATION
+    // =========================================================
+
     @GetMapping("/application/{applicationId}")
     public ResponseEntity<PlacementLetter> getLetterByApplication(
             @PathVariable Integer applicationId) {
@@ -84,137 +85,182 @@ public class PlacementLetterController {
                 );
     }
 
-    /**
-     * View placement letter PDF in browser.
-     */
+    // =========================================================
+    // VIEW PLACEMENT LETTER BY LETTER ID
+    // =========================================================
+
     @GetMapping("/{id}/view")
     public ResponseEntity<Resource> viewLetter(
             @PathVariable Integer id) {
 
         return placementLetterService
                 .getLetterById(id)
-                .map(letter -> {
-
-                    try {
-
-                        if (letter.getFilePath() == null ||
-                                letter.getFilePath().isBlank()) {
-
-                            return ResponseEntity
-                                    .notFound()
-                                    .<Resource>build();
-                        }
-
-                        Path path = Paths.get(
-                                letter.getFilePath()
-                        );
-
-                        Resource resource =
-                                new UrlResource(
-                                        path.toUri()
-                                );
-
-                        if (!resource.exists() ||
-                                !resource.isReadable()) {
-
-                            return ResponseEntity
-                                    .notFound()
-                                    .<Resource>build();
-                        }
-
-                        return ResponseEntity.ok()
-                                .contentType(
-                                        MediaType.APPLICATION_PDF
-                                )
-                                .header(
-                                        HttpHeaders.CONTENT_DISPOSITION,
-                                        "inline; filename=\"" +
-                                                letter.getFileName() +
-                                                "\""
-                                )
-                                .body(resource);
-
-                    } catch (MalformedURLException e) {
-
-                        return ResponseEntity
-                                .badRequest()
-                                .<Resource>build();
-                    }
-                })
+                .map(this::viewPdf)
                 .orElse(
-                        ResponseEntity
-                                .notFound()
-                                .build()
+                        ResponseEntity.notFound().build()
                 );
     }
 
-    /**
-     * Download placement letter PDF.
-     */
+    // =========================================================
+    // DOWNLOAD PLACEMENT LETTER BY LETTER ID
+    // =========================================================
+
     @GetMapping("/{id}/download")
     public ResponseEntity<Resource> downloadLetter(
             @PathVariable Integer id) {
 
         return placementLetterService
                 .getLetterById(id)
-                .map(letter -> {
-
-                    try {
-
-                        if (letter.getFilePath() == null ||
-                                letter.getFilePath().isBlank()) {
-
-                            return ResponseEntity
-                                    .notFound()
-                                    .<Resource>build();
-                        }
-
-                        Path path = Paths.get(
-                                letter.getFilePath()
-                        );
-
-                        Resource resource =
-                                new UrlResource(
-                                        path.toUri()
-                                );
-
-                        if (!resource.exists() ||
-                                !resource.isReadable()) {
-
-                            return ResponseEntity
-                                    .notFound()
-                                    .<Resource>build();
-                        }
-
-                        return ResponseEntity.ok()
-                                .contentType(
-                                        MediaType.APPLICATION_PDF
-                                )
-                                .header(
-                                        HttpHeaders.CONTENT_DISPOSITION,
-                                        "attachment; filename=\"" +
-                                                letter.getFileName() +
-                                                "\""
-                                )
-                                .body(resource);
-
-                    } catch (MalformedURLException e) {
-
-                        return ResponseEntity
-                                .badRequest()
-                                .<Resource>build();
-                    }
-                })
+                .map(this::downloadPdf)
                 .orElse(
-                        ResponseEntity
-                                .notFound()
-                                .build()
+                        ResponseEntity.notFound().build()
                 );
     }
 
-    /**
-     * Delete placement letter.
-     */
+    // =========================================================
+    // VIEW PLACEMENT LETTER BY APPLICATION ID
+    // =========================================================
+
+    @GetMapping("/application/{applicationId}/view")
+    public ResponseEntity<Resource> viewLetterByApplication(
+            @PathVariable Integer applicationId) {
+
+        return placementLetterService
+                .getLetterByApplication(applicationId)
+                .map(this::viewPdf)
+                .orElse(
+                        ResponseEntity.notFound().build()
+                );
+    }
+
+    // =========================================================
+    // DOWNLOAD PLACEMENT LETTER BY APPLICATION ID
+    // =========================================================
+
+    @GetMapping("/application/{applicationId}/download")
+    public ResponseEntity<Resource> downloadLetterByApplication(
+            @PathVariable Integer applicationId) {
+
+        return placementLetterService
+                .getLetterByApplication(applicationId)
+                .map(this::downloadPdf)
+                .orElse(
+                        ResponseEntity.notFound().build()
+                );
+    }
+
+    // =========================================================
+    // VIEW PDF
+    // =========================================================
+
+    private ResponseEntity<Resource> viewPdf(
+            PlacementLetter letter) {
+
+        try {
+
+            if (letter.getFilePath() == null
+                    || letter.getFilePath().isBlank()) {
+
+                return ResponseEntity
+                        .notFound()
+                        .build();
+            }
+
+            Path path = Paths.get(
+                    letter.getFilePath()
+            );
+
+            Resource resource =
+                    new UrlResource(
+                            path.toUri()
+                    );
+
+            if (!resource.exists()
+                    || !resource.isReadable()) {
+
+                return ResponseEntity
+                        .notFound()
+                        .build();
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(
+                            MediaType.APPLICATION_PDF
+                    )
+                    .header(
+                            HttpHeaders.CONTENT_DISPOSITION,
+                            "inline; filename=\""
+                                    + letter.getFileName()
+                                    + "\""
+                    )
+                    .body(resource);
+
+        } catch (MalformedURLException e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .build();
+        }
+    }
+
+    // =========================================================
+    // DOWNLOAD PDF
+    // =========================================================
+
+    private ResponseEntity<Resource> downloadPdf(
+            PlacementLetter letter) {
+
+        try {
+
+            if (letter.getFilePath() == null
+                    || letter.getFilePath().isBlank()) {
+
+                return ResponseEntity
+                        .notFound()
+                        .build();
+            }
+
+            Path path = Paths.get(
+                    letter.getFilePath()
+            );
+
+            Resource resource =
+                    new UrlResource(
+                            path.toUri()
+                    );
+
+            if (!resource.exists()
+                    || !resource.isReadable()) {
+
+                return ResponseEntity
+                        .notFound()
+                        .build();
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(
+                            MediaType.APPLICATION_PDF
+                    )
+                    .header(
+                            HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\""
+                                    + letter.getFileName()
+                                    + "\""
+                    )
+                    .body(resource);
+
+        } catch (MalformedURLException e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .build();
+        }
+    }
+
+    // =========================================================
+    // DELETE PLACEMENT LETTER
+    // =========================================================
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteLetter(
             @PathVariable Integer id) {
