@@ -2,10 +2,10 @@ package com.example.duwasa_fams.controller;
 
 import com.example.duwasa_fams.entity.User;
 import com.example.duwasa_fams.service.UserService;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -21,12 +21,11 @@ public class UserController {
         this.userService = userService;
     }
 
-    // =========================================================
-    // STUDENT REGISTRATION
-    // =========================================================
-
+    /*
+     * PUBLIC STUDENT REGISTRATION
+     */
     @PostMapping("/register")
-    public ResponseEntity<User> registerUser(
+    public ResponseEntity<User> register(
             @RequestBody User user) {
 
         return ResponseEntity.ok(
@@ -34,106 +33,32 @@ public class UserController {
         );
     }
 
-    // =========================================================
-    // LOGIN
-    // =========================================================
-
+    /*
+     * PUBLIC LOGIN
+     */
     @PostMapping("/login")
-    public ResponseEntity<User> login(
-            @RequestBody Map<String, String> loginRequest) {
+    public ResponseEntity<?> login(
+            @RequestBody Map<String, String> request) {
 
         String email =
-                loginRequest.get("email");
+                request.get("email");
 
         String password =
-                loginRequest.get("password");
+                request.get("password");
 
-        return ResponseEntity.ok(
+        String token =
                 userService.login(
                         email,
-                        password)
-        );
-    }
-
-    // =========================================================
-    // GET ALL USERS
-    // =========================================================
-
-    @GetMapping
-    public ResponseEntity<List<User>>
-    getAllUsers() {
-
-        return ResponseEntity.ok(
-                userService.getAllUsers()
-        );
-    }
-
-    // =========================================================
-    // GET USER BY ID
-    // =========================================================
-
-    @GetMapping("/{id}")
-    public ResponseEntity<User>
-    getUserById(
-            @PathVariable Integer id) {
-
-        return userService
-                .getUserById(id)
-                .map(ResponseEntity::ok)
-                .orElse(
-                        ResponseEntity
-                                .notFound()
-                                .build()
+                        password
                 );
-    }
-
-    // =========================================================
-    // UPDATE USER
-    // =========================================================
-
-    @PutMapping("/{id}")
-    public ResponseEntity<User>
-    updateUser(
-            @PathVariable Integer id,
-            @RequestBody User user) {
 
         return ResponseEntity.ok(
-                userService.updateUser(
-                        id,
-                        user)
+                Map.of(
+                        "token",
+                        token,
+                        "message",
+                        "Login successful"
+                )
         );
-    }
-
-    // =========================================================
-    // CHANGE USER ROLE
-    // =========================================================
-
-    @PatchMapping("/{id}/role")
-    public ResponseEntity<User>
-    changeRole(
-            @PathVariable Integer id,
-            @RequestParam String role) {
-
-        return ResponseEntity.ok(
-                userService.changeRole(
-                        id,
-                        role)
-        );
-    }
-
-    // =========================================================
-    // DELETE USER
-    // =========================================================
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void>
-    deleteUser(
-            @PathVariable Integer id) {
-
-        userService.deleteUser(id);
-
-        return ResponseEntity
-                .noContent()
-                .build();
     }
 }

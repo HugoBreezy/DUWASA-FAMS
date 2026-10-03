@@ -5,10 +5,12 @@ import com.example.duwasa_fams.entity.DepartmentCoordinator;
 import com.example.duwasa_fams.entity.User;
 import com.example.duwasa_fams.service.DepartmentService;
 import com.example.duwasa_fams.service.SystemAdminService;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -26,9 +28,9 @@ public class SystemAdminController {
         this.departmentService = departmentService;
     }
 
-    // =========================================================
+    // =========================
     // USER MANAGEMENT
-    // =========================================================
+    // =========================
 
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
@@ -45,9 +47,7 @@ public class SystemAdminController {
         return systemAdminService
                 .getUserById(id)
                 .map(ResponseEntity::ok)
-                .orElse(
-                        ResponseEntity.notFound().build()
-                );
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/users/{id}")
@@ -56,9 +56,7 @@ public class SystemAdminController {
             @RequestBody User user) {
 
         return ResponseEntity.ok(
-                systemAdminService.updateUser(
-                        id,
-                        user)
+                systemAdminService.updateUser(id, user)
         );
     }
 
@@ -68,9 +66,7 @@ public class SystemAdminController {
             @RequestParam String role) {
 
         return ResponseEntity.ok(
-                systemAdminService.changeUserRole(
-                        id,
-                        role)
+                systemAdminService.changeUserRole(id, role)
         );
     }
 
@@ -83,9 +79,9 @@ public class SystemAdminController {
         return ResponseEntity.noContent().build();
     }
 
-    // =========================================================
+    // =========================
     // HR OFFICER MANAGEMENT
-    // =========================================================
+    // =========================
 
     @PostMapping("/hr-officers")
     public ResponseEntity<User> createHROfficer(
@@ -104,24 +100,21 @@ public class SystemAdminController {
         );
     }
 
-    // =========================================================
+    // =========================
     // DEPARTMENT MANAGEMENT
-    // =========================================================
+    // =========================
 
     @PostMapping("/departments")
-    public ResponseEntity<Department>
-    createDepartment(
+    public ResponseEntity<Department> createDepartment(
             @RequestBody Department department) {
 
         return ResponseEntity.ok(
-                systemAdminService.createDepartment(
-                        department)
+                systemAdminService.createDepartment(department)
         );
     }
 
     @GetMapping("/departments")
-    public ResponseEntity<List<Department>>
-    getAllDepartments() {
+    public ResponseEntity<List<Department>> getAllDepartments() {
 
         return ResponseEntity.ok(
                 departmentService.getAllDepartments()
@@ -129,47 +122,43 @@ public class SystemAdminController {
     }
 
     @GetMapping("/departments/{id}")
-    public ResponseEntity<Department>
-    getDepartmentById(
+    public ResponseEntity<Department> getDepartmentById(
             @PathVariable Integer id) {
 
         return departmentService
                 .getDepartmentById(id)
                 .map(ResponseEntity::ok)
-                .orElse(
-                        ResponseEntity.notFound().build()
-                );
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/departments/{id}")
-    public ResponseEntity<Department>
-    updateDepartment(
+    public ResponseEntity<Department> updateDepartment(
             @PathVariable Integer id,
             @RequestBody Department department) {
 
         return ResponseEntity.ok(
                 departmentService.updateDepartment(
                         id,
-                        department)
+                        department
+                )
         );
     }
 
     @PatchMapping("/departments/{id}/status")
-    public ResponseEntity<Department>
-    changeDepartmentStatus(
+    public ResponseEntity<Department> changeDepartmentStatus(
             @PathVariable Integer id,
             @RequestParam String status) {
 
         return ResponseEntity.ok(
                 departmentService.changeDepartmentStatus(
                         id,
-                        status)
+                        status
+                )
         );
     }
 
     @DeleteMapping("/departments/{id}")
-    public ResponseEntity<Void>
-    deleteDepartment(
+    public ResponseEntity<Void> deleteDepartment(
             @PathVariable Integer id) {
 
         departmentService.deleteDepartment(id);
@@ -177,31 +166,48 @@ public class SystemAdminController {
         return ResponseEntity.noContent().build();
     }
 
-    // =========================================================
+    // =========================
     // DEPARTMENT COORDINATOR MANAGEMENT
-    // =========================================================
+    // =========================
 
     @PostMapping("/department-coordinators")
     public ResponseEntity<DepartmentCoordinator>
     createDepartmentCoordinator(
-            @RequestParam Integer departmentId,
-            @RequestBody User user) {
+            @RequestBody Map<String, Object> request) {
+
+        String fname = (String) request.get("fname");
+        String lname = (String) request.get("lname");
+        String email = (String) request.get("email");
+        String phone = (String) request.get("phone");
+        String password = (String) request.get("password");
+
+        Integer departmentId =
+                Integer.valueOf(
+                        request.get("departmentId").toString()
+                );
+
+        User user = new User();
+
+        user.setFname(fname);
+        user.setLname(lname);
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setPassword(password);
 
         return ResponseEntity.ok(
-                systemAdminService
-                        .createDepartmentCoordinator(
-                                user,
-                                departmentId)
+                systemAdminService.createDepartmentCoordinator(
+                        user,
+                        departmentId
+                )
         );
     }
 
     @GetMapping("/department-coordinators")
-    public ResponseEntity<List<DepartmentCoordinator>>
+    public ResponseEntity<List<User>>
     getDepartmentCoordinators() {
 
         return ResponseEntity.ok(
-                systemAdminService
-                        .getDepartmentCoordinators()
+                systemAdminService.getDepartmentCoordinators()
         );
     }
 }

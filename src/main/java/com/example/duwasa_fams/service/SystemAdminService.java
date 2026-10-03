@@ -6,6 +6,8 @@ import com.example.duwasa_fams.entity.User;
 import com.example.duwasa_fams.repository.DepartmentCoordinatorRepository;
 import com.example.duwasa_fams.repository.DepartmentRepository;
 import com.example.duwasa_fams.repository.UserRepository;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -17,38 +19,51 @@ public class SystemAdminService {
 
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
-    private final DepartmentCoordinatorRepository coordinatorRepository;
+    private final DepartmentCoordinatorRepository
+            departmentCoordinatorRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public SystemAdminService(
             UserRepository userRepository,
             DepartmentRepository departmentRepository,
-            DepartmentCoordinatorRepository coordinatorRepository) {
+            DepartmentCoordinatorRepository
+                    departmentCoordinatorRepository,
+            PasswordEncoder passwordEncoder) {
 
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
-        this.coordinatorRepository = coordinatorRepository;
+        this.departmentCoordinatorRepository =
+                departmentCoordinatorRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    // =========================================================
-    // CREATE HR OFFICER
-    // =========================================================
-
+    /*
+     * CREATE HR OFFICER
+     */
     public User createHROfficer(User user) {
 
-        validateUserDetails(user);
+        validateUserInformation(user);
 
         checkEmailExists(user.getEmail());
 
         user.setRole("HR_OFFICER");
-        user.setCreatedAt(LocalDateTime.now());
+
+        user.setPassword(
+                passwordEncoder.encode(
+                        user.getPassword()
+                )
+        );
+
+        user.setCreatedAt(
+                LocalDateTime.now()
+        );
 
         return userRepository.save(user);
     }
 
-    // =========================================================
-    // CREATE DEPARTMENT
-    // =========================================================
-
+    /*
+     * CREATE DEPARTMENT
+     */
     public Department createDepartment(
             Department department) {
 
@@ -56,27 +71,38 @@ public class SystemAdminService {
                 || department.getDepartmentName().isBlank()) {
 
             throw new RuntimeException(
-                    "Department name is required");
-        }
-
-        boolean exists =
-                departmentRepository.findAll()
-                        .stream()
-                        .anyMatch(existing ->
-                                existing.getDepartmentName()
-                                        .equalsIgnoreCase(
-                                                department.getDepartmentName()));
-
-        if (exists) {
-            throw new RuntimeException(
-                    "Department already exists");
+                    "Department name is required"
+            );
         }
 
         if (department.getTotalSlots() == null
                 || department.getTotalSlots() < 0) {
 
             throw new RuntimeException(
-                    "Total slots must be zero or greater");
+                    "Total slots must be zero or greater"
+            );
+        }
+
+        Optional<Department> existingDepartment =
+                departmentRepository.findAll()
+                        .stream()
+                        .filter(existing ->
+                                existing.getDepartmentName()
+                                        != null
+                                        && existing
+                                        .getDepartmentName()
+                                        .equalsIgnoreCase(
+                                                department
+                                                        .getDepartmentName()
+                                        )
+                        )
+                        .findFirst();
+
+        if (existingDepartment.isPresent()) {
+
+            throw new RuntimeException(
+                    "Department already exists"
+            );
         }
 
         department.setOccupiedSlots(0);
@@ -87,43 +113,68 @@ public class SystemAdminService {
             department.setStatus("ACTIVE");
         }
 
-        return departmentRepository.save(department);
+        return departmentRepository.save(
+                department
+        );
     }
 
-    // =========================================================
-    // CREATE DEPARTMENT COORDINATOR
-    // =========================================================
-
-    public DepartmentCoordinator createDepartmentCoordinator(
+    /*
+     * CREATE DEPARTMENT COORDINATOR
+     *
+     * System Admin creates the coordinator
+     * and assigns the coordinator to a department.
+     */
+    public DepartmentCoordinator
+    createDepartmentCoordinator(
             User user,
             Integer departmentId) {
 
-        validateUserDetails(user);
+        validateUserInformation(user);
 
         checkEmailExists(user.getEmail());
 
         Department department =
-                departmentRepository.findById(departmentId)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Department not found"));
+                departmentRepository.findById(
+                        departmentId
+                ).orElseThrow(() ->
+                        new RuntimeException(
+                                "Department not found"
+                        )
+                );
 
-        boolean departmentAlreadyAssigned =
-                coordinatorRepository.findAll()
+        boolean departmentHasCoordinator =
+                departmentCoordinatorRepository
+                        .findAll()
                         .stream()
-                        .anyMatch(coordinator ->
-                                coordinator.getDepartment() != null
-                                        && coordinator.getDepartment()
+                        .anyMatch(existing ->
+                                existing.getDepartment()
+                                        != null
+                                        && existing
+                                        .getDepartment()
                                         .getDepartmentId()
-                                        .equals(departmentId));
+                                        .equals(departmentId)
+                        );
 
-        if (departmentAlreadyAssigned) {
+        if (departmentHasCoordinator) {
+
             throw new RuntimeException(
-                    "This department already has a coordinator");
+                    "This department already has a coordinator"
+            );
         }
 
-        user.setRole("DEPARTMENT_COORDINATOR");
-        user.setCreatedAt(LocalDateTime.now());
+        user.setRole(
+                "DEPARTMENT_COORDINATOR"
+        );
+
+        user.setPassword(
+                passwordEncoder.encode(
+                        user.getPassword()
+                )
+        );
+
+        user.setCreatedAt(
+                LocalDateTime.now()
+        );
 
         User savedUser =
                 userRepository.save(user);
@@ -134,57 +185,65 @@ public class SystemAdminService {
         coordinator.setUser(savedUser);
         coordinator.setDepartment(department);
 
-        return coordinatorRepository.save(
-                coordinator);
+        return departmentCoordinatorRepository.save(
+                coordinator
+        );
     }
 
-    // =========================================================
-    // GET ALL USERS
-    // =========================================================
-
+    /*
+     * GET ALL USERS
+     */
     public List<User> getAllUsers() {
 
         return userRepository.findAll();
     }
 
-    // =========================================================
-    // GET USER BY ID
-    // =========================================================
-
+    /*
+     * GET USER BY ID
+     */
     public Optional<User> getUserById(
             Integer id) {
 
         return userRepository.findById(id);
     }
 
-    // =========================================================
-    // GET HR OFFICERS
-    // =========================================================
-
+    /*
+     * GET HR OFFICERS
+     */
     public List<User> getHROfficers() {
 
         return userRepository.findAll()
                 .stream()
                 .filter(user ->
-                        "HR_OFFICER".equalsIgnoreCase(
-                                user.getRole()))
+                        user.getRole() != null
+                                && user.getRole()
+                                .equals(
+                                        "HR_OFFICER"
+                                )
+                )
                 .toList();
     }
 
-    // =========================================================
-    // GET DEPARTMENT COORDINATORS
-    // =========================================================
+    /*
+     * GET DEPARTMENT COORDINATORS
+     */
+    public List<User> getDepartmentCoordinators() {
 
-    public List<DepartmentCoordinator>
-    getDepartmentCoordinators() {
-
-        return coordinatorRepository.findAll();
+        return userRepository.findAll()
+                .stream()
+                .filter(user ->
+                        user.getRole() != null
+                                && user.getRole()
+                                .equals(
+                                        "DEPARTMENT_COORDINATOR"
+                                )
+                )
+                .toList();
     }
 
-    // =========================================================
-    // UPDATE USER
-    // =========================================================
-
+    /*
+     * UPDATE USER
+     */
     public User updateUser(
             Integer id,
             User user) {
@@ -193,72 +252,65 @@ public class SystemAdminService {
                 userRepository.findById(id)
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "User not found"));
+                                        "User not found"
+                                )
+                        );
 
-        if (user.getFname() == null
-                || user.getFname().isBlank()) {
+        if (user.getFname() != null
+                && !user.getFname().isBlank()) {
 
-            throw new RuntimeException(
-                    "First name is required");
+            existingUser.setFname(
+                    user.getFname()
+            );
         }
 
-        if (user.getLname() == null
-                || user.getLname().isBlank()) {
+        if (user.getLname() != null
+                && !user.getLname().isBlank()) {
 
-            throw new RuntimeException(
-                    "Last name is required");
+            existingUser.setLname(
+                    user.getLname()
+            );
         }
 
-        if (user.getEmail() == null
-                || user.getEmail().isBlank()) {
+        if (user.getEmail() != null
+                && !user.getEmail().isBlank()
+                && !user.getEmail()
+                .equalsIgnoreCase(
+                        existingUser.getEmail()
+                )) {
 
-            throw new RuntimeException(
-                    "Email is required");
+            checkEmailExists(user.getEmail());
+
+            existingUser.setEmail(
+                    user.getEmail()
+            );
         }
 
-        boolean emailUsedByAnotherUser =
-                userRepository.findAll()
-                        .stream()
-                        .anyMatch(existing ->
-                                !existing.getUserId()
-                                        .equals(id)
-                                        && existing.getEmail() != null
-                                        && existing.getEmail()
-                                        .equalsIgnoreCase(
-                                                user.getEmail()));
+        if (user.getPhone() != null) {
 
-        if (emailUsedByAnotherUser) {
-            throw new RuntimeException(
-                    "Email is already registered by another user");
+            existingUser.setPhone(
+                    user.getPhone()
+            );
         }
-
-        existingUser.setFname(
-                user.getFname());
-
-        existingUser.setLname(
-                user.getLname());
-
-        existingUser.setEmail(
-                user.getEmail());
-
-        existingUser.setPhone(
-                user.getPhone());
 
         if (user.getPassword() != null
                 && !user.getPassword().isBlank()) {
 
             existingUser.setPassword(
-                    user.getPassword());
+                    passwordEncoder.encode(
+                            user.getPassword()
+                    )
+            );
         }
 
         return userRepository.save(
-                existingUser);
+                existingUser
+        );
     }
 
-    // =========================================================
-    // CHANGE USER ROLE
-    // =========================================================
-
+    /*
+     * CHANGE USER ROLE
+     */
     public User changeUserRole(
             Integer id,
             String role) {
@@ -267,105 +319,118 @@ public class SystemAdminService {
                 userRepository.findById(id)
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "User not found"));
+                                        "User not found"
+                                )
+                        );
 
         if (role == null || role.isBlank()) {
 
             throw new RuntimeException(
-                    "Role is required");
+                    "Role is required"
+            );
         }
 
         String normalizedRole =
                 role.toUpperCase();
 
         if (!normalizedRole.equals("STUDENT")
-                && !normalizedRole.equals("HR_OFFICER")
+                && !normalizedRole.equals(
+                "HR_OFFICER")
                 && !normalizedRole.equals(
                 "DEPARTMENT_COORDINATOR")
                 && !normalizedRole.equals(
                 "SYSTEM_ADMIN")) {
 
             throw new RuntimeException(
-                    "Invalid role");
+                    "Invalid role"
+            );
         }
 
-        user.setRole(normalizedRole);
+        user.setRole(
+                normalizedRole
+        );
 
         return userRepository.save(user);
     }
 
-    // =========================================================
-    // DELETE USER
-    // =========================================================
-
+    /*
+     * DELETE USER
+     */
     public void deleteUser(
             Integer id) {
 
         if (!userRepository.existsById(id)) {
 
             throw new RuntimeException(
-                    "User not found");
+                    "User not found"
+            );
         }
 
         userRepository.deleteById(id);
     }
 
-    // =========================================================
-    // VALIDATE USER DETAILS
-    // =========================================================
-
-    private void validateUserDetails(
+    /*
+     * VALIDATE USER INFORMATION
+     */
+    private void validateUserInformation(
             User user) {
 
         if (user.getFname() == null
                 || user.getFname().isBlank()) {
 
             throw new RuntimeException(
-                    "First name is required");
+                    "First name is required"
+            );
         }
 
         if (user.getLname() == null
                 || user.getLname().isBlank()) {
 
             throw new RuntimeException(
-                    "Last name is required");
+                    "Last name is required"
+            );
         }
 
         if (user.getEmail() == null
                 || user.getEmail().isBlank()) {
 
             throw new RuntimeException(
-                    "Email is required");
+                    "Email is required"
+            );
         }
 
         if (user.getPassword() == null
                 || user.getPassword().isBlank()) {
 
             throw new RuntimeException(
-                    "Password is required");
+                    "Password is required"
+            );
         }
     }
 
-    // =========================================================
-    // CHECK EMAIL
-    // =========================================================
-
+    /*
+     * CHECK EMAIL
+     */
     private void checkEmailExists(
             String email) {
 
         boolean exists =
                 userRepository.findAll()
                         .stream()
-                        .anyMatch(user ->
-                                user.getEmail() != null
-                                        && user.getEmail()
+                        .anyMatch(existing ->
+                                existing.getEmail() != null
+                                        && existing
+                                        .getEmail()
                                         .equalsIgnoreCase(
-                                                email));
+                                                email
+                                        )
+                        );
 
         if (exists) {
 
             throw new RuntimeException(
-                    "Email is already registered");
+                    "Email is already registered"
+            );
         }
     }
 }

@@ -1,8 +1,18 @@
 package com.example.duwasa_fams.service;
 
+import com.example.duwasa_fams.entity.Student;
 import com.example.duwasa_fams.entity.User;
+import com.example.duwasa_fams.repository.StudentRepository;
 import com.example.duwasa_fams.repository.UserRepository;
+import com.example.duwasa_fams.security.JwtService;
+
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,140 +22,204 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final StudentRepository studentRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
+    private final UserDetailsService userDetailsService;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(
+            UserRepository userRepository,
+            StudentRepository studentRepository,
+            PasswordEncoder passwordEncoder,
+            AuthenticationManager authenticationManager,
+            JwtService jwtService,
+            UserDetailsService userDetailsService) {
+
         this.userRepository = userRepository;
+        this.studentRepository = studentRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
+        this.userDetailsService = userDetailsService;
     }
 
-    // =========================================================
-    // REGISTER USER
-    // =========================================================
-
+    /*
+     * STUDENT REGISTRATION
+     *
+     * Public registration creates:
+     *
+     * 1. User record
+     * 2. Student record
+     *
+     * The student profile information such as
+     * registration number, college, course and
+     * year of study can be completed later.
+     */
+    @Transactional
     public User registerUser(User user) {
 
         if (user.getFname() == null
                 || user.getFname().isBlank()) {
 
             throw new RuntimeException(
-                    "First name is required");
+                    "First name is required"
+            );
         }
 
         if (user.getLname() == null
                 || user.getLname().isBlank()) {
 
             throw new RuntimeException(
-                    "Last name is required");
+                    "Last name is required"
+            );
         }
 
         if (user.getEmail() == null
                 || user.getEmail().isBlank()) {
 
             throw new RuntimeException(
-                    "Email is required");
+                    "Email is required"
+            );
         }
 
         if (user.getPassword() == null
                 || user.getPassword().isBlank()) {
 
             throw new RuntimeException(
-                    "Password is required");
+                    "Password is required"
+            );
         }
 
-        Optional<User> existingUser =
+        boolean emailExists =
                 userRepository.findAll()
                         .stream()
-                        .filter(existing ->
+                        .anyMatch(existing ->
                                 existing.getEmail() != null
                                         && existing.getEmail()
                                         .equalsIgnoreCase(
-                                                user.getEmail()))
-                        .findFirst();
+                                                user.getEmail()
+                                        )
+                        );
 
-        if (existingUser.isPresent()) {
+        if (emailExists) {
+
             throw new RuntimeException(
-                    "Email is already registered");
+                    "Email is already registered"
+            );
         }
 
         /*
-         * Public registration is for students.
-         * HR, Department Coordinator and System Admin
-         * accounts are managed by the system administrator.
+         * Public registration is only for students.
          */
         user.setRole("STUDENT");
 
-        user.setCreatedAt(
-                LocalDateTime.now());
+        /*
+         * Encrypt password before saving.
+         */
+        user.setPassword(
+                passwordEncoder.encode(
+                        user.getPassword()
+                )
+        );
 
-        return userRepository.save(user);
+        user.setCreatedAt(
+                LocalDateTime.now()
+        );
+
+        /*
+         * Save USER first because STUDENT
+         * contains user_id as a foreign key.
+         */
+        User savedUser =
+                userRepository.save(user);
+
+        /*
+         * Create the STUDENT record.
+         *
+         * Profile fields can be completed later
+         * through:
+         *
+         * PUT /api/students/{id}/profile
+         */
+        Student student = new Student();
+
+        student.setUser(savedUser);
+
+        studentRepository.save(student);
+
+        return savedUser;
     }
 
-    // =========================================================
-    // LOGIN
-    // =========================================================
-
-    public User login(
+    /*
+     * LOGIN
+     *
+     * Authenticate user and return JWT token.
+     */
+    public String login(
             String email,
             String password) {
 
         if (email == null || email.isBlank()) {
+
             throw new RuntimeException(
-                    "Email is required");
+                    "Email is required"
+            );
         }
 
         if (password == null || password.isBlank()) {
-            throw new RuntimeException(
-                    "Password is required");
-        }
 
-        User user =
-                userRepository.findAll()
-                        .stream()
-                        .filter(existing ->
-                                existing.getEmail() != null
-                                        && existing.getEmail()
-                                        .equalsIgnoreCase(email))
-                        .findFirst()
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Invalid email or password"));
+            throw new RuntimeException(
+                    "Password is required"
+            );
+        }
 
         /*
-         * Authentication is currently simple database
-         * authentication. Spring Security/JWT can be added
-         * later without changing the ERD.
+         * Authenticate email and password.
          */
-        if (!user.getPassword().equals(password)) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        email,
+                        password
+                )
+        );
 
-            throw new RuntimeException(
-                    "Invalid email or password");
-        }
+        /*
+         * Load actual user details from database.
+         */
+        UserDetails userDetails =
+                userDetailsService.loadUserByUsername(
+                        email
+                );
 
-        return user;
+        /*
+         * Generate JWT.
+         */
+        return jwtService.generateToken(
+                userDetails
+        );
     }
 
-    // =========================================================
-    // GET ALL USERS
-    // =========================================================
-
+    /*
+     * GET ALL USERS
+     */
     public List<User> getAllUsers() {
 
         return userRepository.findAll();
     }
 
-    // =========================================================
-    // GET USER BY ID
-    // =========================================================
-
+    /*
+     * GET USER BY ID
+     */
     public Optional<User> getUserById(
             Integer id) {
 
         return userRepository.findById(id);
     }
 
-    // =========================================================
-    // UPDATE USER
-    // =========================================================
-
+    /*
+     * UPDATE USER
+     */
     public User updateUser(
             Integer id,
             User user) {
@@ -154,50 +228,91 @@ public class UserService {
                 userRepository.findById(id)
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "User not found"));
+                                        "User not found"
+                                )
+                        );
 
-        existingUser.setFname(
-                user.getFname());
+        if (user.getFname() != null
+                && !user.getFname().isBlank()) {
 
-        existingUser.setLname(
-                user.getLname());
+            existingUser.setFname(
+                    user.getFname()
+            );
+        }
 
-        existingUser.setEmail(
-                user.getEmail());
+        if (user.getLname() != null
+                && !user.getLname().isBlank()) {
 
-        existingUser.setPhone(
-                user.getPhone());
+            existingUser.setLname(
+                    user.getLname()
+            );
+        }
+
+        if (user.getEmail() != null
+                && !user.getEmail().isBlank()
+                && !user.getEmail()
+                .equalsIgnoreCase(
+                        existingUser.getEmail()
+                )) {
+
+            boolean emailExists =
+                    userRepository.findAll()
+                            .stream()
+                            .anyMatch(existing ->
+                                    existing.getEmail() != null
+                                            && existing.getEmail()
+                                            .equalsIgnoreCase(
+                                                    user.getEmail()
+                                            )
+                                            && !existing
+                                            .getUserId()
+                                            .equals(id)
+                            );
+
+            if (emailExists) {
+
+                throw new RuntimeException(
+                        "Email is already registered"
+                );
+            }
+
+            existingUser.setEmail(
+                    user.getEmail()
+            );
+        }
+
+        if (user.getPhone() != null) {
+
+            existingUser.setPhone(
+                    user.getPhone()
+            );
+        }
 
         /*
-         * Password is only changed if a new password
-         * is provided.
+         * Encrypt a new password.
          */
         if (user.getPassword() != null
                 && !user.getPassword().isBlank()) {
 
             existingUser.setPassword(
-                    user.getPassword());
+                    passwordEncoder.encode(
+                            user.getPassword()
+                    )
+            );
         }
 
         /*
-         * Role is updated only when a role is explicitly
-         * supplied. This is useful for System Admin.
+         * Role is not changed here.
+         * Role management belongs to SYSTEM_ADMIN.
          */
-        if (user.getRole() != null
-                && !user.getRole().isBlank()) {
-
-            existingUser.setRole(
-                    user.getRole());
-        }
-
         return userRepository.save(
-                existingUser);
+                existingUser
+        );
     }
 
-    // =========================================================
-    // CHANGE USER ROLE
-    // =========================================================
-
+    /*
+     * CHANGE USER ROLE
+     */
     public User changeRole(
             Integer id,
             String role) {
@@ -206,12 +321,15 @@ public class UserService {
                 userRepository.findById(id)
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "User not found"));
+                                        "User not found"
+                                )
+                        );
 
         if (role == null || role.isBlank()) {
 
             throw new RuntimeException(
-                    "Role is required");
+                    "Role is required"
+            );
         }
 
         String normalizedRole =
@@ -225,25 +343,28 @@ public class UserService {
                 "SYSTEM_ADMIN")) {
 
             throw new RuntimeException(
-                    "Invalid role");
+                    "Invalid role"
+            );
         }
 
-        user.setRole(normalizedRole);
+        user.setRole(
+                normalizedRole
+        );
 
         return userRepository.save(user);
     }
 
-    // =========================================================
-    // DELETE USER
-    // =========================================================
-
+    /*
+     * DELETE USER
+     */
     public void deleteUser(
             Integer id) {
 
         if (!userRepository.existsById(id)) {
 
             throw new RuntimeException(
-                    "User not found");
+                    "User not found"
+            );
         }
 
         userRepository.deleteById(id);
