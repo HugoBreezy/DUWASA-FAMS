@@ -1,0 +1,42 @@
+:root { --ocean:#006994; --ocean-dark:#004B6B; --ocean-light:#EAF6FB; --text:#1F2937; --muted:#6B7280; --bs-primary:#006994; --bs-primary-rgb:0,105,148; --bs-link-color:#006994; }
+body { background:#fff; color:var(--text); }
+.btn-primary { --bs-btn-bg:var(--ocean); --bs-btn-border-color:var(--ocean); --bs-btn-hover-bg:var(--ocean-dark); --bs-btn-hover-border-color:var(--ocean-dark); --bs-btn-active-bg:var(--ocean-dark); --bs-btn-disabled-bg:var(--ocean); --bs-btn-disabled-border-color:var(--ocean); }
+.btn-outline-primary { --bs-btn-color:var(--ocean); --bs-btn-border-color:var(--ocean); --bs-btn-hover-bg:var(--ocean); --bs-btn-hover-border-color:var(--ocean); }
+.sidebar { position:fixed; inset:0 auto 0 0; width:250px; background:var(--ocean); color:#fff; display:flex; flex-direction:column; z-index:1040; transition:transform .2s; }
+.sidebar .brand { padding:1.1rem 1.25rem; border-bottom:1px solid rgba(255,255,255,.18); }
+.sidebar .brand b { font-size:1.25rem; letter-spacing:.02em; }
+.sidebar .brand small { display:block; opacity:.8; font-size:.72rem; line-height:1.2; }
+.sidebar nav { flex:1; padding:.75rem 0; overflow-y:auto; }
+.sidebar a.nav-item { display:flex; align-items:center; gap:.75rem; padding:.7rem 1.25rem; color:rgba(255,255,255,.85); text-decoration:none; border-left:4px solid transparent; }
+.sidebar a.nav-item:hover { background:rgba(255,255,255,.1); color:#fff; }
+.sidebar a.nav-item.active { background:rgba(255,255,255,.2); color:#fff; border-left-color:#fff; font-weight:600; }
+.sidebar .logout { border:0; background:none; width:100%; text-align:left; }
+.scrim { display:none; }
+.main { margin-left:250px; min-height:100vh; display:flex; flex-direction:column; }
+.topbar { background:#fff; border-bottom:1px solid #e5e7eb; box-shadow:0 1px 3px rgba(0,0,0,.05); padding:.7rem 1.5rem; display:flex; align-items:center; gap:1rem; position:sticky; top:0; z-index:1030; }
+.content { padding:1.5rem; flex:1; max-width:1280px; width:100%; }
+.card { border-color:#e5e7eb; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+.avatar { width:36px; height:36px; border-radius:50%; background:var(--ocean-light); color:var(--ocean-dark); display:grid; place-items:center; font-weight:700; }
+.stat-icon { width:44px; height:44px; border-radius:10px; display:grid; place-items:center; font-size:1.3rem; background:var(--ocean-light); color:var(--ocean); }
+.dropdown-panel { position:absolute; right:0; top:100%; width:340px; max-width:90vw; background:#fff; border:1px solid #e5e7eb; border-radius:.5rem; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:1050; }
+.timeline { list-style:none; margin:0; padding:0; }
+.timeline li { position:relative; padding:0 0 1.1rem 2rem; }
+.timeline li::before { content:''; position:absolute; left:.55rem; top:1.2rem; bottom:0; width:2px; background:#e5e7eb; }
+.timeline li:last-child::before { display:none; }
+.timeline .dot { position:absolute; left:0; top:.1rem; width:1.15rem; height:1.15rem; border-radius:50%; background:#fff; border:2px solid #cbd5e1; }
+.timeline .done .dot { background:#198754; border-color:#198754; }
+.timeline .current .dot { background:#fff; border-color:var(--ocean); box-shadow:0 0 0 4px var(--ocean-light); }
+.timeline .failed .dot { background:#DC3545; border-color:#DC3545; }
+.timeline .pending { color:var(--muted); }
+.modal-backdrop-lite { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1060; display:grid; place-items:center; padding:1rem; overflow-y:auto; }
+.toast-host { position:fixed; top:1rem; right:1rem; z-index:2000; width:340px; max-width:92vw; }
+@media (max-width: 991.98px) {
+  .sidebar { transform:translateX(-100%); }
+  .sidebar.open { transform:none; }
+  .scrim.open { display:block; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1035; }
+  .main { margin-left:0; }
+  .content { padding:1rem; }
+}
+.auth-wrap { min-height:100vh; display:grid; place-items:center; background:var(--ocean-light); padding:1rem; }
+.auth-card { width:100%; max-width:430px; }
+.auth-brand { background:var(--ocean); color:#fff; padding:1.25rem 1.5rem; border-radius:.5rem .5rem 0 0; }

@@ -26,42 +26,28 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
     private final UserDetailsService userDetailsService;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
             UserDetailsService userDetailsService) {
 
-        this.jwtAuthenticationFilter =
-                jwtAuthenticationFilter;
-
-        this.userDetailsService =
-                userDetailsService;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.userDetailsService = userDetailsService;
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-
         return new BCryptPasswordEncoder();
     }
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
 
-        /*
-         * Spring Security version used by
-         * Spring Boot 4 requires UserDetailsService
-         * in the DaoAuthenticationProvider constructor.
-         */
         DaoAuthenticationProvider provider =
-                new DaoAuthenticationProvider(
-                        userDetailsService
-                );
+                new DaoAuthenticationProvider(userDetailsService);
 
-        provider.setPasswordEncoder(
-                passwordEncoder()
-        );
+        provider.setPasswordEncoder(passwordEncoder());
 
         return provider;
     }
@@ -71,8 +57,7 @@ public class SecurityConfig {
             AuthenticationConfiguration configuration)
             throws Exception {
 
-        return configuration
-                .getAuthenticationManager();
+        return configuration.getAuthenticationManager();
     }
 
     @Bean
@@ -81,9 +66,8 @@ public class SecurityConfig {
             throws Exception {
 
         http
-                .csrf(csrf ->
-                        csrf.disable()
-                )
+                // REST API + JWT
+                .csrf(csrf -> csrf.disable())
 
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
@@ -93,26 +77,28 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
-                        // =================================================
+                        // ==========================================
                         // PUBLIC
-                        // =================================================
+                        // ==========================================
 
                         .requestMatchers(
                                 "/api/users/register",
                                 "/api/users/login"
                         ).permitAll()
 
-                        // =================================================
+
+                        // ==========================================
                         // SYSTEM ADMIN
-                        // =================================================
+                        // ==========================================
 
                         .requestMatchers(
                                 "/api/admin/**"
                         ).hasRole("SYSTEM_ADMIN")
 
-                        // =================================================
-                        // HR OFFICER
-                        // =================================================
+
+                        // ==========================================
+                        // HR OFFICER - APPLICATION REVIEW
+                        // ==========================================
 
                         .requestMatchers(
                                 "/api/applications/hr-review",
@@ -123,28 +109,70 @@ public class SecurityConfig {
                                 "/api/applications/*/reject-by-hr"
                         ).hasRole("HR_OFFICER")
 
-                        // =================================================
+
+                        // ==========================================
+                        // APPLICATION DOCUMENTS
+                        // ==========================================
+
+                        // Document ownership and workflow status are checked
+                        // in ApplicationDocumentService.
+                        .requestMatchers(
+                                "/api/application-documents/upload"
+                        ).authenticated()
+
+
+                        // HR can verify/reject documents
+                        .requestMatchers(
+                                "/api/application-documents/*/verify"
+                        ).hasRole("HR_OFFICER")
+
+
+                        // Ownership and workflow status are checked in the
+                        // document service for every read operation.
+                        .requestMatchers(
+                                "/api/application-documents/*/view"
+                        ).authenticated()
+
+
+                        .requestMatchers(
+                                "/api/application-documents/*/download"
+                        ).authenticated()
+
+
+                        // Get document information / delete document.
+                        .requestMatchers(
+                                "/api/application-documents/*"
+                        ).authenticated()
+
+
+                        // Get all documents.
+                        .requestMatchers(
+                                "/api/application-documents"
+                        ).authenticated()
+
+
+                        // ==========================================
                         // DEPARTMENT COORDINATOR
-                        // =================================================
+                        // ==========================================
 
                         .requestMatchers(
                                 "/api/department-coordinators/**"
-                        ).hasRole(
-                                "DEPARTMENT_COORDINATOR"
-                        )
+                        ).hasRole("DEPARTMENT_COORDINATOR")
 
-                        // =================================================
+
+                        // ==========================================
                         // STUDENT
-                        // =================================================
+                        // ==========================================
 
                         .requestMatchers(
                                 "/api/students/**",
                                 "/api/applications/student/**"
                         ).hasRole("STUDENT")
 
-                        // =================================================
+
+                        // ==========================================
                         // EVERYTHING ELSE
-                        // =================================================
+                        // ==========================================
 
                         .anyRequest().authenticated()
                 )

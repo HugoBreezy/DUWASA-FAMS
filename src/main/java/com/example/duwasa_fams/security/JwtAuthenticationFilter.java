@@ -32,6 +32,13 @@ public class JwtAuthenticationFilter
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        return "/api/users/login".equals(path)
+                || "/api/users/register".equals(path);
+    }
+
+    @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
