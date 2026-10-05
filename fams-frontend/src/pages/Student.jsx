@@ -393,7 +393,7 @@ export function Apply() {
                         value={d.departmentId}
                         disabled={d.status !== 'ACTIVE'}
                       >
-                        {d.departmentName} — {free} slot(s) free
+                        {d.departmentName} — {free} slot(s) 
                         {d.status !== 'ACTIVE'
                           ? ` (${d.status})`
                           : ''}

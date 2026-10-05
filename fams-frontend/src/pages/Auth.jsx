@@ -28,33 +28,333 @@ const responseMessage = (error, fallback) => {
 
 function Shell({ title, children, footer }) {
   return (
-    <div className="auth-wrap">
-      <div className="auth-card card">
+    <>
+      <style>{`
+        .fams-auth-page {
+          min-height: 100vh;
+          position: relative;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 20px;
+          background:
+            radial-gradient(circle at 15% 20%, rgba(255,255,255,0.24), transparent 22%),
+            radial-gradient(circle at 85% 15%, rgba(255,255,255,0.18), transparent 20%),
+            linear-gradient(145deg, #043f5f 0%, #056b91 42%, #0b8db0 72%, #42b9cf 100%);
+        }
 
-        <div className="auth-brand">
-          <div className="fs-4 fw-bold">
-            DUWASA FAMS
+        .fams-auth-page::before {
+          content: "";
+          position: absolute;
+          width: 420px;
+          height: 420px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.08);
+          top: -170px;
+          left: -120px;
+        }
+
+        .fams-auth-page::after {
+          content: "";
+          position: absolute;
+          width: 520px;
+          height: 520px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.07);
+          right: -180px;
+          bottom: -230px;
+        }
+
+        .fams-water {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+        }
+
+        .fams-bubble {
+          position: absolute;
+          border: 1px solid rgba(255,255,255,0.35);
+          border-radius: 50%;
+          background: rgba(255,255,255,0.08);
+          box-shadow:
+            inset 0 0 12px rgba(255,255,255,0.12),
+            0 0 18px rgba(255,255,255,0.08);
+          animation: famsFloat 7s ease-in-out infinite;
+        }
+
+        .fams-bubble.one {
+          width: 22px;
+          height: 22px;
+          left: 12%;
+          top: 20%;
+        }
+
+        .fams-bubble.two {
+          width: 42px;
+          height: 42px;
+          right: 14%;
+          top: 27%;
+          animation-delay: 1.5s;
+        }
+
+        .fams-bubble.three {
+          width: 16px;
+          height: 16px;
+          right: 25%;
+          bottom: 23%;
+          animation-delay: 2.5s;
+        }
+
+        .fams-bubble.four {
+          width: 30px;
+          height: 30px;
+          left: 20%;
+          bottom: 18%;
+          animation-delay: 3.5s;
+        }
+
+        @keyframes famsFloat {
+          0%, 100% {
+            transform: translateY(0);
+            opacity: 0.55;
+          }
+
+          50% {
+            transform: translateY(-22px);
+            opacity: 0.9;
+          }
+        }
+
+        .fams-wave {
+          position: absolute;
+          left: -5%;
+          bottom: -55px;
+          width: 110%;
+          height: 150px;
+          background: rgba(255,255,255,0.12);
+          border-radius: 50% 50% 0 0 / 35% 35% 0 0;
+          transform: rotate(-2deg);
+        }
+
+        .fams-wave.wave-two {
+          bottom: -85px;
+          background: rgba(255,255,255,0.09);
+          transform: rotate(2deg);
+        }
+
+        .fams-auth-card {
+          width: 100%;
+          max-width: 475px;
+          position: relative;
+          z-index: 5;
+          border: 1px solid rgba(255,255,255,0.35) !important;
+          border-radius: 20px !important;
+          overflow: hidden;
+          background: rgba(255,255,255,0.96) !important;
+          box-shadow:
+            0 25px 70px rgba(0,35,55,0.32),
+            0 8px 25px rgba(0,0,0,0.12);
+          backdrop-filter: blur(12px);
+        }
+
+        .fams-auth-brand {
+          position: relative;
+          padding: 30px 32px;
+          color: white;
+          overflow: hidden;
+          background:
+            linear-gradient(135deg, #03587b 0%, #087da2 55%, #12a0bd 100%);
+        }
+
+        .fams-auth-brand::after {
+          content: "";
+          position: absolute;
+          width: 190px;
+          height: 190px;
+          border-radius: 50%;
+          right: -70px;
+          top: -110px;
+          background: rgba(255,255,255,0.10);
+        }
+
+        .fams-brand-title {
+          position: relative;
+          z-index: 2;
+          letter-spacing: 0.5px;
+        }
+
+        .fams-brand-subtitle {
+          position: relative;
+          z-index: 2;
+          margin-top: 5px;
+          color: rgba(255,255,255,0.82);
+        }
+
+        .fams-auth-body {
+          padding: 28px 32px !important;
+        }
+
+        .fams-auth-title {
+          color: #063f5c;
+          font-weight: 700;
+          margin-bottom: 24px;
+        }
+
+        .fams-auth-label {
+          color: #174e67;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+
+        .fams-auth-input {
+          min-height: 48px;
+          border: 1px solid #c9dfe8 !important;
+          border-radius: 10px !important;
+          background: #f8fcfe !important;
+          padding: 11px 14px !important;
+          transition: all 0.2s ease;
+        }
+
+        .fams-auth-input:focus {
+          border-color: #0783a7 !important;
+          box-shadow: 0 0 0 4px rgba(7,131,167,0.12) !important;
+          background: white !important;
+        }
+
+        .fams-password-group {
+          position: relative;
+        }
+
+        .fams-password-input {
+          padding-right: 52px !important;
+        }
+
+        .fams-password-toggle {
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 38px;
+          height: 38px;
+          border: none;
+          border-radius: 8px;
+          background: transparent;
+          color: #4f7483;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          z-index: 3;
+        }
+
+        .fams-password-toggle:hover {
+          background: #e7f4f8;
+          color: #057ba0;
+        }
+
+        .fams-auth-button {
+          min-height: 48px;
+          border: none !important;
+          border-radius: 10px !important;
+          font-weight: 700 !important;
+          letter-spacing: 0.2px;
+          background: linear-gradient(135deg, #05698d, #0a9cbd) !important;
+          box-shadow: 0 8px 18px rgba(5,105,141,0.22);
+          transition: all 0.2s ease;
+        }
+
+        .fams-auth-button:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 11px 22px rgba(5,105,141,0.28);
+        }
+
+        .fams-auth-button:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        .fams-auth-footer {
+          padding: 16px 24px !important;
+          background: #f7fbfd !important;
+          border-top: 1px solid #e0edf2 !important;
+          color: #55707d;
+        }
+
+        .fams-auth-footer a {
+          color: #057ba0;
+          font-weight: 600;
+          text-decoration: none;
+        }
+
+        .fams-auth-footer a:hover {
+          text-decoration: underline;
+        }
+
+        .fams-alert {
+          border-radius: 10px !important;
+          border: none !important;
+        }
+
+        @media (max-width: 576px) {
+          .fams-auth-page {
+            padding: 20px 14px;
+          }
+
+          .fams-auth-card {
+            max-width: 100%;
+            border-radius: 16px !important;
+          }
+
+          .fams-auth-brand {
+            padding: 25px 24px;
+          }
+
+          .fams-auth-body {
+            padding: 25px 22px !important;
+          }
+        }
+      `}</style>
+
+      <div className="fams-auth-page">
+        <div className="fams-water">
+          <span className="fams-bubble one" />
+          <span className="fams-bubble two" />
+          <span className="fams-bubble three" />
+          <span className="fams-bubble four" />
+          <div className="fams-wave" />
+          <div className="fams-wave wave-two" />
+        </div>
+
+        <div className="fams-auth-card card">
+
+          <div className="fams-auth-brand">
+            <div className="fams-brand-title fs-4 fw-bold">
+              DUWASA FAMS
+            </div>
+
+            <div className="fams-brand-subtitle small">
+              DUWASA Field Application Management System
+            </div>
           </div>
 
-          <div className="small opacity-75">
-            DUWASA Field Application Management System
+          <div className="card-body fams-auth-body">
+            {title && (
+              <h1 className="h5 fams-auth-title">
+                {title}
+              </h1>
+            )}
+
+            {children}
           </div>
+
+          <div className="card-footer fams-auth-footer text-center small">
+            {footer}
+          </div>
+
         </div>
-
-        <div className="card-body p-4">
-          <h1 className="h5 mb-3">
-            {title}
-          </h1>
-
-          {children}
-        </div>
-
-        <div className="card-footer bg-white text-center small">
-          {footer}
-        </div>
-
       </div>
-    </div>
+    </>
   );
 }
 
@@ -70,6 +370,7 @@ export function Login() {
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const successMessage = location.state?.success || '';
 
@@ -119,7 +420,7 @@ export function Login() {
 
   return (
     <Shell
-      title="Sign in"
+      title=""
       footer={
         <>
           New student?{' '}
@@ -133,26 +434,26 @@ export function Login() {
       <form onSubmit={submit}>
 
         {successMessage && (
-          <div className="alert alert-success py-2">
+          <div className="alert alert-success py-2 fams-alert mb-3">
             <i className="bi bi-check-circle me-2" />
             {successMessage}
           </div>
         )}
 
         {err && (
-          <div className="alert alert-danger py-2">
+          <div className="alert alert-danger py-2 fams-alert mb-3">
             {err}
           </div>
         )}
 
         <div className="mb-3">
-          <label className="form-label">
+          <label className="form-label fams-auth-label">
             Email
           </label>
 
           <input
             type="email"
-            className="form-control"
+            className="form-control fams-auth-input"
             required
             autoFocus
             value={f.email}
@@ -162,30 +463,61 @@ export function Login() {
                 email: e.target.value
               })
             }
+            placeholder="Enter your email"
           />
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">
+        <div className="mb-4">
+          <label className="form-label fams-auth-label">
             Password
           </label>
 
-          <input
-            type="password"
-            className="form-control"
-            required
-            value={f.password}
-            onChange={(e) =>
-              setF({
-                ...f,
-                password: e.target.value
-              })
-            }
-          />
+          <div className="fams-password-group">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              className="form-control fams-auth-input fams-password-input"
+              required
+              value={f.password}
+              onChange={(e) =>
+                setF({
+                  ...f,
+                  password: e.target.value
+                })
+              }
+              placeholder="Enter your password"
+            />
+
+            <button
+              type="button"
+              className="fams-password-toggle"
+              onClick={() =>
+                setShowPassword(!showPassword)
+              }
+              aria-label={
+                showPassword
+                  ? 'Hide password'
+                  : 'Show password'
+              }
+              title={
+                showPassword
+                  ? 'Hide password'
+                  : 'Show password'
+              }
+            >
+              <i
+                className={
+                  showPassword
+                    ? 'bi bi-eye-slash'
+                    : 'bi bi-eye'
+                }
+              />
+            </button>
+          </div>
         </div>
 
         <button
-          className="btn btn-primary w-100"
+          type="submit"
+          className="btn btn-primary w-100 fams-auth-button"
           disabled={busy}
         >
           <Busy busy={busy}>
@@ -214,6 +546,7 @@ export function Register() {
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const set = (k) => (e) =>
     setF({
@@ -271,7 +604,7 @@ export function Register() {
       <form onSubmit={submit}>
 
         {err && (
-          <div className="alert alert-danger py-2">
+          <div className="alert alert-danger py-2 fams-alert">
             {err}
           </div>
         )}
@@ -279,76 +612,110 @@ export function Register() {
         <div className="row g-2 mb-3">
 
           <div className="col">
-            <label className="form-label">
+            <label className="form-label fams-auth-label">
               First name
             </label>
 
             <input
-              className="form-control"
+              className="form-control fams-auth-input"
               required
               value={f.fname}
               onChange={set('fname')}
+              placeholder="First name"
             />
           </div>
 
           <div className="col">
-            <label className="form-label">
+            <label className="form-label fams-auth-label">
               Last name
             </label>
 
             <input
-              className="form-control"
+              className="form-control fams-auth-input"
               required
               value={f.lname}
               onChange={set('lname')}
+              placeholder="Last name"
             />
           </div>
 
         </div>
 
         <div className="mb-3">
-          <label className="form-label">
+          <label className="form-label fams-auth-label">
             Email
           </label>
 
           <input
             type="email"
-            className="form-control"
+            className="form-control fams-auth-input"
             required
             value={f.email}
             onChange={set('email')}
+            placeholder="Enter your email"
           />
         </div>
 
         <div className="mb-3">
-          <label className="form-label">
+          <label className="form-label fams-auth-label">
             Phone
           </label>
 
           <input
-            className="form-control"
+            className="form-control fams-auth-input"
             value={f.phone}
             onChange={set('phone')}
+            placeholder="Phone number"
           />
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">
+        <div className="mb-4">
+          <label className="form-label fams-auth-label">
             Password
           </label>
 
-          <input
-            type="password"
-            className="form-control"
-            required
-            minLength={6}
-            value={f.password}
-            onChange={set('password')}
-          />
+          <div className="fams-password-group">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              className="form-control fams-auth-input fams-password-input"
+              required
+              minLength={6}
+              value={f.password}
+              onChange={set('password')}
+              placeholder="Create a password"
+            />
+
+            <button
+              type="button"
+              className="fams-password-toggle"
+              onClick={() =>
+                setShowPassword(!showPassword)
+              }
+              aria-label={
+                showPassword
+                  ? 'Hide password'
+                  : 'Show password'
+              }
+              title={
+                showPassword
+                  ? 'Hide password'
+                  : 'Show password'
+              }
+            >
+              <i
+                className={
+                  showPassword
+                    ? 'bi bi-eye-slash'
+                    : 'bi bi-eye'
+                }
+              />
+            </button>
+          </div>
         </div>
 
         <button
-          className="btn btn-primary w-100"
+          type="submit"
+          className="btn btn-primary w-100 fams-auth-button"
           disabled={busy}
         >
           <Busy busy={busy}>

@@ -1,11 +1,7 @@
 import { useRef, useState } from 'react';
-
 import { Link, useParams } from 'react-router-dom';
-
 import { api, http, notify, openLetter } from '../api.js';
-
 import { useAuth } from '../auth.jsx';
-
 import {
   Busy,
   Confirm,
@@ -20,7 +16,6 @@ import {
   usePoll
 } from '../ui.jsx';
 
-
 const VERIF = {
   PENDING: 'warning text-dark',
   VERIFIED: 'success',
@@ -29,13 +24,11 @@ const VERIF = {
 
 const MAX = 1024 * 1024;
 
-
 /* =========================================================
    DOCUMENT VIEW / DOWNLOAD
    ========================================================= */
 
 async function openDocument(documentId, download = false, fileName = 'document') {
-
   const response = await http.get(
     `/api/application-documents/${documentId}/${download ? 'download' : 'view'}`,
     {
@@ -53,12 +46,9 @@ async function openDocument(documentId, download = false, fileName = 'document')
   const url = URL.createObjectURL(blob);
 
   if (download) {
-
     const a = document.createElement('a');
-
     a.href = url;
     a.download = fileName || 'document';
-
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -66,9 +56,7 @@ async function openDocument(documentId, download = false, fileName = 'document')
     setTimeout(() => {
       URL.revokeObjectURL(url);
     }, 5000);
-
   } else {
-
     window.open(url, '_blank');
 
     setTimeout(() => {
@@ -77,13 +65,11 @@ async function openDocument(documentId, download = false, fileName = 'document')
   }
 }
 
-
 /* =========================================================
    TIMELINE
    ========================================================= */
 
 function Timeline({ app, letter }) {
-
   const s = app.status;
 
   const idx =
@@ -101,7 +87,6 @@ function Timeline({ app, letter }) {
   });
 
   const steps = [
-
     step('Application created', 'done'),
 
     step(
@@ -142,20 +127,15 @@ function Timeline({ app, letter }) {
       'Placement letter',
       letter ? 'done' : 'pending'
     ),
-
   ];
 
   return (
-
     <ul className="timeline">
-
       {steps.map((x) => (
-
         <li
           key={x.label}
           className={x.state}
         >
-
           <span className="dot" />
 
           <div
@@ -173,16 +153,11 @@ function Timeline({ app, letter }) {
               Reason: {x.note}
             </div>
           )}
-
         </li>
-
       ))}
-
     </ul>
-
   );
 }
-
 
 /* =========================================================
    DOCUMENT LIST
@@ -192,13 +167,12 @@ function DocList({
   docs,
   onDelete,
   onVerify,
-  busyId
+  busyId,
+  allowDownload = true
 }) {
-
   const [busyAction, setBusyAction] = useState(null);
 
   if (!docs.length) {
-
     return (
       <Empty icon="file-earmark">
         No documents uploaded yet.
@@ -210,68 +184,45 @@ function DocList({
     document,
     download
   ) => {
-
     const key =
       `${download ? 'download' : 'view'}-${document.documentId}`;
 
     setBusyAction(key);
 
     try {
-
       await openDocument(
         document.documentId,
         download,
         document.fileName
       );
-
     } catch (error) {
-
       notify(
         'danger',
         error.response?.data?.message ||
         'Could not open the document.'
       );
-
     } finally {
-
       setBusyAction(null);
-
     }
   };
 
-
   return (
-
     <div className="table-responsive">
-
       <table className="table align-middle mb-0">
-
         <thead className="table-light">
-
           <tr>
-
             <th>Type</th>
-
             <th>File</th>
-
             <th>Uploaded</th>
-
             <th>Verification</th>
-
             <th>Document</th>
-
             <th />
-
           </tr>
-
         </thead>
 
         <tbody>
-
           {docs.map((d) => (
-
             <tr key={d.documentId}>
-
               <td>
                 {d.documentType}
               </td>
@@ -292,7 +243,6 @@ function DocList({
               </td>
 
               <td>
-
                 <span
                   className={`badge bg-${
                     VERIF[d.verificationStatus] ||
@@ -301,11 +251,9 @@ function DocList({
                 >
                   {d.verificationStatus}
                 </span>
-
               </td>
 
               <td className="text-nowrap">
-
                 <button
                   type="button"
                   className="btn btn-sm btn-outline-primary me-1"
@@ -317,7 +265,6 @@ function DocList({
                     handleDocumentAction(d, false)
                   }
                 >
-
                   <Busy
                     busy={
                       busyAction ===
@@ -327,41 +274,36 @@ function DocList({
                     <i className="bi bi-eye me-1" />
                     View
                   </Busy>
-
                 </button>
 
-                <button
-                  type="button"
-                  className="btn btn-sm btn-primary"
-                  disabled={
-                    busyAction ===
-                    `download-${d.documentId}`
-                  }
-                  onClick={() =>
-                    handleDocumentAction(d, true)
-                  }
-                >
-
-                  <Busy
-                    busy={
+                {allowDownload && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-primary"
+                    disabled={
                       busyAction ===
                       `download-${d.documentId}`
                     }
+                    onClick={() =>
+                      handleDocumentAction(d, true)
+                    }
                   >
-                    <i className="bi bi-download me-1" />
-                    Download
-                  </Busy>
-
-                </button>
-
+                    <Busy
+                      busy={
+                        busyAction ===
+                        `download-${d.documentId}`
+                      }
+                    >
+                      <i className="bi bi-download me-1" />
+                      Download
+                    </Busy>
+                  </button>
+                )}
               </td>
 
               <td className="text-end text-nowrap">
-
                 {onVerify && (
-
                   <>
-
                     <button
                       className="btn btn-sm btn-outline-success me-1"
                       disabled={
@@ -387,13 +329,10 @@ function DocList({
                     >
                       Reject
                     </button>
-
                   </>
-
                 )}
 
                 {onDelete && (
-
                   <button
                     className="btn btn-sm btn-outline-danger ms-1"
                     onClick={() =>
@@ -402,87 +341,67 @@ function DocList({
                   >
                     <i className="bi bi-trash" />
                   </button>
-
                 )}
-
               </td>
-
             </tr>
-
           ))}
-
         </tbody>
-
       </table>
-
     </div>
-
   );
 }
-
 
 /* =========================================================
    DOCUMENT UPLOAD
    ========================================================= */
 
 function DocumentUpload({ appId, onDone }) {
-
-  const [type, setType] = useState('');
+  const type = 'APPLICATION_LETTER';
 
   const [file, setFile] = useState(null);
-
   const [busy, setBusy] = useState(false);
 
   const input = useRef();
 
-
   const pick = (e) => {
-
     const f = e.target.files[0];
 
     if (!f) {
       return setFile(null);
     }
 
-    if (!/\.(pdf|jpe?g|png)$/i.test(f.name)) {
-
+    if (!/\.pdf$/i.test(f.name)) {
       notify(
         'warning',
-        'Only PDF, JPG, JPEG and PNG files are allowed.'
+        'Only PDF files are allowed.'
       );
 
       e.target.value = '';
-
       return setFile(null);
     }
 
     if (f.size > MAX) {
-
       notify(
         'warning',
         'File size must not exceed 1 MB.'
       );
 
       e.target.value = '';
-
       return setFile(null);
     }
 
     setFile(f);
   };
 
-
   const go = async (e) => {
-
     e.preventDefault();
 
     setBusy(true);
 
     try {
-
       await api.upload(
         appId,
-        type.trim(),
+        type,
         file
       );
 
@@ -491,94 +410,65 @@ function DocumentUpload({ appId, onDone }) {
         'Document uploaded.'
       );
 
-      setType('');
-
       setFile(null);
-
       input.current.value = '';
 
       await onDone();
-
     } finally {
-
       setBusy(false);
-
     }
   };
 
-
   return (
-
     <form
       onSubmit={go}
       className="row g-2 align-items-end mb-3"
     >
-
       <div className="col-md-4">
-
         <label className="form-label">
           Document type
         </label>
 
         <input
           className="form-control"
-          placeholder="e.g. Introduction letter"
-          required
-          value={type}
-          onChange={(e) =>
-            setType(e.target.value)
-          }
+          value="Application Letter"
+          readOnly
         />
-
       </div>
 
-
       <div className="col-md-5">
-
         <label className="form-label">
-          File (PDF, JPG, PNG · max 1 MB)
+          File (PDF max 1 MB)
         </label>
 
         <input
           ref={input}
           type="file"
-          accept=".pdf,.jpg,.jpeg,.png"
+          accept=".pdf"
           className="form-control"
           required
           onChange={pick}
         />
-
       </div>
 
-
       <div className="col-md-3">
-
         <button
           className="btn btn-primary w-100"
           disabled={
             busy ||
-            !file ||
-            !type.trim()
+            !file
           }
         >
-
           <Busy busy={busy}>
-
             {busy
               ? 'Uploading Document...'
               : 'Upload document'}
-
           </Busy>
-
         </button>
-
       </div>
-
     </form>
-
   );
 }
-
 
 /* =========================================================
    STUDENT ACTIONS
@@ -589,7 +479,6 @@ function StudentActions({
   docs,
   reload
 }) {
-
   const [dlg, setDlg] = useState(null);
 
   if (app.status !== 'DRAFT') {
@@ -597,35 +486,32 @@ function StudentActions({
   }
 
   return (
-
     <div className="card mb-3 border-primary">
-
       <div className="card-header bg-white fw-semibold">
         Next step: upload documents and submit
       </div>
 
       <div className="card-body">
-
         <p className="text-muted small">
           Upload the required documents, review the
           details on this page, then submit. After
           submission, HR starts the review.
         </p>
 
-
-        <DocumentUpload
-          appId={app.applicationId}
-          onDone={reload}
-        />
-
+        {!docs.length && (
+          <DocumentUpload
+            appId={app.applicationId}
+            onDone={reload}
+          />
+        )}
 
         <DocList
           docs={docs}
+          allowDownload={false}
           onDelete={(d) =>
             setDlg({ d })
           }
         />
-
 
         <button
           className="btn btn-primary mt-3"
@@ -637,18 +523,13 @@ function StudentActions({
           Submit application
         </button>
 
-
         {!docs.length && (
-
           <span className="text-muted small ms-2">
             Upload at least one document first.
           </span>
-
         )}
 
-
         {dlg?.d && (
-
           <Confirm
             danger
             title="Delete document"
@@ -658,21 +539,16 @@ function StudentActions({
               setDlg(null)
             }
             onConfirm={async () => {
-
               await api.deleteDocument(
                 dlg.d.documentId
               );
 
               await reload();
-
             }}
           />
-
         )}
 
-
         {dlg?.submit && (
-
           <Confirm
             title="Submit application"
             message="Are you sure you want to submit this application? You will not be able to change it afterwards."
@@ -682,7 +558,6 @@ function StudentActions({
               setDlg(null)
             }
             onConfirm={async () => {
-
               await api.submit(
                 app.applicationId
               );
@@ -693,26 +568,19 @@ function StudentActions({
               );
 
               await reload();
-
             }}
           />
-
         )}
-
       </div>
-
     </div>
-
   );
 }
-
 
 /* =========================================================
    CHECK RESULT
    ========================================================= */
 
 const Check = ({ r }) =>
-
   !r
     ? null
     : (
@@ -723,7 +591,6 @@ const Check = ({ r }) =>
             : 'danger'
         }`}
       >
-
         <i
           className={`bi bi-${
             r.ok
@@ -731,12 +598,9 @@ const Check = ({ r }) =>
               : 'x-circle'
           } me-1`}
         />
-
         {r.msg}
-
       </span>
     );
-
 
 /* =========================================================
    HR ACTIONS
@@ -749,7 +613,6 @@ function HrActions({
   onVerify,
   busyDoc
 }) {
-
   const id = app.applicationId;
 
   const q = {
@@ -757,11 +620,8 @@ function HrActions({
   };
 
   const [res, setRes] = useState({});
-
   const [busy, setBusy] = useState('');
-
   const [dlg, setDlg] = useState(null);
-
 
   const run = async (
     key,
@@ -769,11 +629,9 @@ function HrActions({
     ok,
     fail
   ) => {
-
     setBusy(key);
 
     try {
-
       const r = await fn();
 
       setRes((x) => ({
@@ -785,9 +643,7 @@ function HrActions({
       }));
 
       return true;
-
     } catch {
-
       setRes((x) => ({
         ...x,
         [key]: {
@@ -797,15 +653,10 @@ function HrActions({
       }));
 
       return false;
-
     } finally {
-
       setBusy('');
-
     }
-
   };
-
 
   const reqFail =
     !docs.length
@@ -822,9 +673,7 @@ function HrActions({
           ? 'Application contains rejected documents.'
           : 'Requirements are not met.';
 
-
   const checks = async () => {
-
     if (
       !(await run(
         'validate',
@@ -836,7 +685,6 @@ function HrActions({
     ) {
       return;
     }
-
 
     if (
       !(await run(
@@ -854,7 +702,6 @@ function HrActions({
       return;
     }
 
-
     await run(
       'slot',
       () =>
@@ -866,20 +713,15 @@ function HrActions({
         `${n} slot(s) available.`,
       'No available slot in the selected department.'
     );
-
   };
-
 
   const allOk =
     res.validate?.ok &&
     res.req?.ok &&
     res.slot?.ok;
 
-
   const forward = async () => {
-
     try {
-
       await api.forward(
         id,
         q
@@ -891,78 +733,57 @@ function HrActions({
       );
 
       await reload();
-
     } catch {
-
       notify(
         'danger',
         'Could not forward. Re-run the checks; the department may also have no coordinator assigned.'
       );
 
       throw new Error('x');
-
     }
-
   };
 
-
   return (
-
     <>
-
       <div className="card mb-3">
-
         <div className="card-header bg-white fw-semibold">
           Document verification
         </div>
 
         <div className="card-body p-0">
-
           <DocList
             docs={docs}
             onVerify={onVerify}
             busyId={busyDoc}
           />
-
         </div>
-
       </div>
 
-
       <div className="card mb-3 border-primary">
-
         <div className="card-header bg-white fw-semibold">
           HR decision
         </div>
 
         <div className="card-body">
-
           <p className="text-muted small">
             Verify each document, then run the checks.
             Forward only when every check passes;
             otherwise reject with a reason.
           </p>
 
-
           <button
             className="btn btn-outline-primary mb-3"
             disabled={!!busy}
             onClick={checks}
           >
-
             <Busy busy={!!busy}>
-
               {busy
                 ? 'Checking Requirements...'
                 : 'Run checks'}
-
             </Busy>
-
           </button>
 
-
           <ul className="list-unstyled small mb-3">
-
             <li>
               Application data
               <Check r={res.validate} />
@@ -977,9 +798,7 @@ function HrActions({
               Department slots
               <Check r={res.slot} />
             </li>
-
           </ul>
-
 
           <button
             className="btn btn-success me-2"
@@ -991,7 +810,6 @@ function HrActions({
             Approve and forward to department
           </button>
 
-
           <button
             className="btn btn-outline-danger"
             onClick={() =>
@@ -1000,14 +818,10 @@ function HrActions({
           >
             Reject application
           </button>
-
         </div>
-
       </div>
 
-
       {dlg === 'fwd' && (
-
         <Confirm
           title="Forward application"
           message="Approve the HR review and forward this application to the department coordinator?"
@@ -1018,12 +832,9 @@ function HrActions({
           }
           onConfirm={forward}
         />
-
       )}
 
-
       {dlg === 'rej' && (
-
         <ReasonModal
           title="Reject application"
           confirmText="Reject application"
@@ -1032,7 +843,6 @@ function HrActions({
             setDlg(null)
           }
           onSubmit={async (r) => {
-
             await api.rejectByHr(
               id,
               r
@@ -1044,17 +854,12 @@ function HrActions({
             );
 
             await reload();
-
           }}
         />
-
       )}
-
     </>
-
   );
 }
-
 
 /* =========================================================
    COORDINATOR ACTIONS
@@ -1064,7 +869,6 @@ function CoordActions({
   app,
   reload
 }) {
-
   const [dlg, setDlg] = useState(null);
 
   const {
@@ -1079,23 +883,16 @@ function CoordActions({
     30000
   );
 
-
   return (
-
     <div className="card mb-3 border-primary">
-
       <div className="card-header bg-white fw-semibold">
         Department decision
       </div>
 
       <div className="card-body">
-
         <div className="mb-3">
-
           Available positions in{' '}
-
           {app.department?.departmentName}:
-
           {' '}
 
           {loading
@@ -1113,9 +910,7 @@ function CoordActions({
                 {pos}
               </strong>
             )}
-
         </div>
-
 
         <button
           className="btn btn-success me-2"
@@ -1127,7 +922,6 @@ function CoordActions({
           Accept application
         </button>
 
-
         <button
           className="btn btn-outline-danger"
           onClick={() =>
@@ -1137,9 +931,7 @@ function CoordActions({
           Reject application
         </button>
 
-
         {dlg === 'acc' && (
-
           <Confirm
             title="Accept application"
             message="Are you sure you want to accept this application? A placement letter will be generated and the student notified."
@@ -1149,7 +941,6 @@ function CoordActions({
               setDlg(null)
             }
             onConfirm={async () => {
-
               await api.accept(
                 app.applicationId
               );
@@ -1160,15 +951,11 @@ function CoordActions({
               );
 
               await reload();
-
             }}
           />
-
         )}
 
-
         {dlg === 'rej' && (
-
           <ReasonModal
             title="Reject application"
             confirmText="Reject application"
@@ -1177,7 +964,6 @@ function CoordActions({
               setDlg(null)
             }
             onSubmit={async (r) => {
-
               await api.rejectByDept(
                 app.applicationId,
                 r
@@ -1189,19 +975,13 @@ function CoordActions({
               );
 
               await reload();
-
             }}
           />
-
         )}
-
       </div>
-
     </div>
-
   );
 }
-
 
 /* =========================================================
    PLACEMENT LETTER
@@ -1211,12 +991,9 @@ export function LetterCard({
   appId,
   letter
 }) {
-
   const [busy, setBusy] = useState('');
 
-
   const go = async (dl) => {
-
     setBusy(
       dl
         ? 'd'
@@ -1224,45 +1001,30 @@ export function LetterCard({
     );
 
     try {
-
       await openLetter(
         appId,
         dl,
         letter.fileName
       );
-
     } finally {
-
       setBusy('');
-
     }
-
   };
 
-
   return (
-
     <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
-
       <div>
-
         <div className="fw-semibold">
-
           <i className="bi bi-file-earmark-pdf text-danger me-1" />
-
           {letter.letterNumber}
-
         </div>
 
         <div className="small text-muted">
           Issued {fmtDate(letter.issueDate)}
         </div>
-
       </div>
 
-
       <div>
-
         <button
           className="btn btn-outline-primary btn-sm me-2"
           disabled={!!busy}
@@ -1270,13 +1032,10 @@ export function LetterCard({
             go(false)
           }
         >
-
           <Busy busy={busy === 'v'}>
             View
           </Busy>
-
         </button>
-
 
         <button
           className="btn btn-primary btn-sm"
@@ -1285,20 +1044,14 @@ export function LetterCard({
             go(true)
           }
         >
-
           <Busy busy={busy === 'd'}>
             Download
           </Busy>
-
         </button>
-
       </div>
-
     </div>
-
   );
 }
-
 
 /* =========================================================
    APPLICATION DETAILS
@@ -1307,7 +1060,6 @@ export function LetterCard({
 export default function ApplicationDetails({
   base
 }) {
-
   const { id } = useParams();
 
   const { user } = useAuth();
@@ -1317,28 +1069,22 @@ export default function ApplicationDetails({
   const [busyDoc, setBusyDoc] =
     useState(null);
 
-
   const {
     data,
     loading,
     reload
   } = usePoll(
     async () => {
-
       const app =
         await api.application(id);
-
 
       const [
         docs,
         hist,
         letter
       ] = await Promise.all([
-
         api.documents(id),
-
         api.history(id),
-
         app.status === 'ACCEPTED'
           ? api
               .letterByApplication(
@@ -1347,9 +1093,7 @@ export default function ApplicationDetails({
               )
               .catch(() => null)
           : null
-
       ]);
-
 
       return {
         app,
@@ -1357,12 +1101,10 @@ export default function ApplicationDetails({
         hist,
         letter
       };
-
     },
     [id],
     15000
   );
-
 
   if (
     loading &&
@@ -1371,24 +1113,16 @@ export default function ApplicationDetails({
     return <Spinner />;
   }
 
-
   const back = (
-
     <Link
       to={`${base}/applications`}
       className="btn btn-link px-0 mb-2"
     >
-
       <i className="bi bi-arrow-left" />
-
       {' '}
-
       Back to applications
-
     </Link>
-
   );
-
 
   if (
     !data ||
@@ -1398,9 +1132,7 @@ export default function ApplicationDetails({
         user.studentId
     )
   ) {
-
     return (
-
       <>
         {back}
 
@@ -1408,11 +1140,8 @@ export default function ApplicationDetails({
           Application not found.
         </Empty>
       </>
-
     );
-
   }
-
 
   const {
     app,
@@ -1427,43 +1156,31 @@ export default function ApplicationDetails({
   const dep =
     app.department;
 
-
   const verify = async (
     d,
     status
   ) => {
-
     setBusyDoc(
       d.documentId
     );
 
     try {
-
       await api.verifyDocument(
         d.documentId,
         status
       );
 
       await reload();
-
     } finally {
-
       setBusyDoc(null);
-
     }
-
   };
 
-
   return (
-
     <>
-
       {back}
 
-
       <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
-
         <h1 className="h4 mb-0">
           Application #{app.applicationId}
         </h1>
@@ -1471,24 +1188,18 @@ export default function ApplicationDetails({
         <StatusBadge
           status={app.status}
         />
-
       </div>
 
-
       {role === 'STUDENT' && (
-
         <StudentActions
           app={app}
           docs={docs}
           reload={reload}
         />
-
       )}
-
 
       {role === 'HR_OFFICER' &&
         app.status === 'PENDING_HR_REVIEW' && (
-
           <HrActions
             app={app}
             docs={docs}
@@ -1496,34 +1207,24 @@ export default function ApplicationDetails({
             onVerify={verify}
             busyDoc={busyDoc}
           />
-
         )}
-
 
       {role === 'DEPARTMENT_COORDINATOR' &&
         app.status === 'PENDING_DEPARTMENT_REVIEW' && (
-
           <CoordActions
             app={app}
             reload={reload}
           />
-
         )}
 
-
       <div className="row g-3 mb-3">
-
-
         <div className="col-md-6 col-xl-4">
-
           <div className="card h-100">
-
             <div className="card-header bg-white fw-semibold">
               Student information
             </div>
 
             <div className="card-body">
-
               <Field
                 label="Name"
                 value={fullName(st?.user)}
@@ -1560,24 +1261,17 @@ export default function ApplicationDetails({
                 label="Year of study"
                 value={st?.yearOfStudy}
               />
-
             </div>
-
           </div>
-
         </div>
 
-
         <div className="col-md-6 col-xl-4">
-
           <div className="card h-100">
-
             <div className="card-header bg-white fw-semibold">
               Application & department
             </div>
 
             <div className="card-body">
-
               <Field
                 label="Department"
                 value={dep?.departmentName}
@@ -1613,132 +1307,89 @@ export default function ApplicationDetails({
                 label="Comments"
                 value={app.comments}
               />
-
             </div>
-
           </div>
-
         </div>
 
-
         <div className="col-xl-4">
-
           <div className="card h-100">
-
             <div className="card-header bg-white fw-semibold">
               Status
             </div>
 
             <div className="card-body">
-
               <Timeline
                 app={app}
                 letter={letter}
               />
-
             </div>
-
           </div>
-
         </div>
-
       </div>
-
 
       {role !== 'HR_OFFICER' &&
         app.status !== 'DRAFT' && (
-
           <div className="card mb-3">
-
             <div className="card-header bg-white fw-semibold">
               Documents
             </div>
 
             <div className="card-body p-0">
-
               <DocList
                 docs={docs}
               />
-
             </div>
-
           </div>
-
         )}
-
 
       {role === 'HR_OFFICER' &&
         app.status !== 'PENDING_HR_REVIEW' && (
-
           <div className="card mb-3">
-
             <div className="card-header bg-white fw-semibold">
               Documents
             </div>
 
             <div className="card-body p-0">
-
               <DocList
                 docs={docs}
               />
-
             </div>
-
           </div>
-
         )}
 
-
       {app.status === 'ACCEPTED' && (
-
         <div className="card mb-3">
-
           <div className="card-header bg-white fw-semibold">
             Placement letter
           </div>
 
           <div className="card-body">
-
             {letter ? (
-
               <LetterCard
                 appId={app.applicationId}
                 letter={letter}
               />
-
             ) : (
-
               <span className="text-muted">
                 The placement letter is not available yet.
               </span>
-
             )}
-
           </div>
-
         </div>
-
       )}
 
-
       <div className="card">
-
         <div className="card-header bg-white fw-semibold">
           Application history
         </div>
 
         <div className="card-body">
-
           {!hist.length ? (
-
             <span className="text-muted">
               No history recorded yet.
             </span>
-
           ) : (
-
             <ul className="timeline">
-
               {[...hist]
                 .sort(
                   (a, b) =>
@@ -1746,12 +1397,10 @@ export default function ApplicationDetails({
                     new Date(b.actionDate)
                 )
                 .map((h) => (
-
                   <li
                     key={h.historyId}
                     className="done"
                   >
-
                     <span className="dot" />
 
                     <div className="fw-semibold">
@@ -1768,27 +1417,16 @@ export default function ApplicationDetails({
                     </div>
 
                     {h.comments && (
-
                       <div className="small">
                         {h.comments}
                       </div>
-
                     )}
-
                   </li>
-
                 ))}
-
             </ul>
-
           )}
-
         </div>
-
       </div>
-
     </>
-
   );
-
 }
