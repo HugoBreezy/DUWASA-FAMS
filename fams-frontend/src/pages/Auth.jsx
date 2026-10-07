@@ -9,21 +9,67 @@ const responseMessage = (error, fallback) => {
 
   if (typeof data === 'string' && data.trim()) return data;
 
-  if (
-    typeof data?.message === 'string' &&
-    data.message.trim()
-  ) {
+  if (typeof data?.message === 'string' && data.message.trim()) {
     return data.message;
   }
 
-  if (
-    typeof data?.error === 'string' &&
-    data.error.trim()
-  ) {
+  if (typeof data?.error === 'string' && data.error.trim()) {
     return data.error;
   }
 
   return fallback;
+};
+
+const validateEmail = (email) => {
+  const value = email.trim();
+
+  if (!/^[a-z]/.test(value)) {
+    return 'Email must start with a lowercase letter.';
+  }
+
+  if (/[A-Z]/.test(value)) {
+    return 'Email must use lowercase letters only.';
+  }
+
+  if (!/^[a-z][a-z0-9._%+-]*@[a-z0-9.-]+\.[a-z]{2,}$/.test(value)) {
+    return 'Please enter a valid email address.';
+  }
+
+  return '';
+};
+
+const validatePhone = (phone) => {
+  const value = phone.trim();
+
+  if (!/^\d{9}$/.test(value)) {
+    return 'Phone number must contain exactly 9 digits.';
+  }
+
+  return '';
+};
+
+const validatePassword = (password) => {
+  if (password.length < 8) {
+    return 'Password must be at least 8 characters long.';
+  }
+
+  if (!/^[A-Z]/.test(password)) {
+    return 'Password must start with a capital letter.';
+  }
+
+  if (!/[!@#$%^&*(),.?":{}|<>_\-+=/\\[\];'`~]/.test(password)) {
+    return 'Password must contain at least one special character.';
+  }
+
+  if (password.toLowerCase().includes('password')) {
+    return 'The word "password" cannot be used in your password.';
+  }
+
+  return '';
+};
+
+const blockPasswordClipboard = (e) => {
+  e.preventDefault();
 };
 
 function Shell({ title, children, footer }) {
@@ -222,6 +268,29 @@ function Shell({ title, children, footer }) {
           background: white !important;
         }
 
+        .fams-phone-group {
+          display: flex;
+          align-items: stretch;
+        }
+
+        .fams-phone-prefix {
+          min-width: 70px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #c9dfe8;
+          border-right: none;
+          border-radius: 10px 0 0 10px;
+          background: #eaf6fa;
+          color: #174e67;
+          font-weight: 700;
+          padding: 0 12px;
+        }
+
+        .fams-phone-input {
+          border-radius: 0 10px 10px 0 !important;
+        }
+
         .fams-password-group {
           position: relative;
         }
@@ -296,6 +365,12 @@ function Shell({ title, children, footer }) {
           border: none !important;
         }
 
+        .fams-validation-help {
+          margin-top: 6px;
+          font-size: 12px;
+          color: #6a8490;
+        }
+
         @media (max-width: 576px) {
           .fams-auth-page {
             padding: 20px 14px;
@@ -327,7 +402,6 @@ function Shell({ title, children, footer }) {
         </div>
 
         <div className="fams-auth-card card">
-
           <div className="fams-auth-brand">
             <div className="fams-brand-title fs-4 fw-bold">
               DUWASA FAMS
@@ -351,7 +425,6 @@ function Shell({ title, children, footer }) {
           <div className="card-footer fams-auth-footer text-center small">
             {footer}
           </div>
-
         </div>
       </div>
     </>
@@ -391,7 +464,7 @@ export function Login() {
 
     try {
       const u = await login(
-        f.email,
+        f.email.trim().toLowerCase(),
         f.password
       );
 
@@ -399,18 +472,20 @@ export function Login() {
         HOME[u.role],
         { replace: true }
       );
-
     } catch (e2) {
       setErr(
         e2.message === 'role'
           ? 'Your account role could not be determined. Contact the system administrator.'
           : e2.response
-            ? responseMessage(
-                e2,
-                e2.response.status === 401
-                  ? 'Invalid email or password.'
-                  : `Login failed (${e2.response.status}).`
+            ? (
+                e2.response.status === 401 ||
+                e2.response.status === 403
               )
+              ? 'Invalid email or password. Please check your email and password and try again.'
+              : responseMessage(
+                  e2,
+                  `Login failed (${e2.response.status}).`
+                )
             : 'Cannot reach the server.'
       );
 
@@ -430,9 +505,7 @@ export function Login() {
         </>
       }
     >
-
       <form onSubmit={submit}>
-
         {successMessage && (
           <div className="alert alert-success py-2 fams-alert mb-3">
             <i className="bi bi-check-circle me-2" />
@@ -460,7 +533,7 @@ export function Login() {
             onChange={(e) =>
               setF({
                 ...f,
-                email: e.target.value
+                email: e.target.value.toLowerCase()
               })
             }
             placeholder="Enter your email"
@@ -484,7 +557,12 @@ export function Login() {
                   password: e.target.value
                 })
               }
+              onPaste={blockPasswordClipboard}
+              onCopy={blockPasswordClipboard}
+              onCut={blockPasswordClipboard}
+              onDrop={blockPasswordClipboard}
               placeholder="Enter your password"
+              autoComplete="current-password"
             />
 
             <button
@@ -526,9 +604,7 @@ export function Login() {
               : 'Sign in'}
           </Busy>
         </button>
-
       </form>
-
     </Shell>
   );
 }
@@ -554,14 +630,76 @@ export function Register() {
       [k]: e.target.value
     });
 
+  const setEmail = (e) => {
+    setF({
+      ...f,
+      email: e.target.value.toLowerCase()
+    });
+  };
+
+  const setPhone = (e) => {
+    const digits = e.target.value
+      .replace(/\D/g, '')
+      .slice(0, 9);
+
+    setF({
+      ...f,
+      phone: digits
+    });
+  };
+
   const submit = async (e) => {
     e.preventDefault();
 
-    setBusy(true);
     setErr('');
 
+    const fname = f.fname.trim();
+    const lname = f.lname.trim();
+    const email = f.email.trim().toLowerCase();
+    const phone = f.phone.trim();
+    const password = f.password;
+
+    if (!fname) {
+      setErr('First name is required.');
+      return;
+    }
+
+    if (!lname) {
+      setErr('Last name is required.');
+      return;
+    }
+
+    const emailError = validateEmail(email);
+
+    if (emailError) {
+      setErr(emailError);
+      return;
+    }
+
+    const phoneError = validatePhone(phone);
+
+    if (phoneError) {
+      setErr(phoneError);
+      return;
+    }
+
+    const passwordError = validatePassword(password);
+
+    if (passwordError) {
+      setErr(passwordError);
+      return;
+    }
+
+    setBusy(true);
+
     try {
-      await api.register(f);
+      await api.register({
+        fname,
+        lname,
+        email,
+        phone: `+255${phone}`,
+        password
+      });
 
       nav(
         '/login',
@@ -573,7 +711,6 @@ export function Register() {
           }
         }
       );
-
     } catch (e2) {
       setErr(
         e2.response
@@ -600,9 +737,7 @@ export function Register() {
         </>
       }
     >
-
       <form onSubmit={submit}>
-
         {err && (
           <div className="alert alert-danger py-2 fams-alert">
             {err}
@@ -610,7 +745,6 @@ export function Register() {
         )}
 
         <div className="row g-2 mb-3">
-
           <div className="col">
             <label className="form-label fams-auth-label">
               First name
@@ -638,7 +772,6 @@ export function Register() {
               placeholder="Last name"
             />
           </div>
-
         </div>
 
         <div className="mb-3">
@@ -651,9 +784,14 @@ export function Register() {
             className="form-control fams-auth-input"
             required
             value={f.email}
-            onChange={set('email')}
+            onChange={setEmail}
             placeholder="Enter your email"
+            autoComplete="email"
           />
+
+          <div className="fams-validation-help">
+            Example: john@gmail.com
+          </div>
         </div>
 
         <div className="mb-3">
@@ -661,12 +799,26 @@ export function Register() {
             Phone
           </label>
 
-          <input
-            className="form-control fams-auth-input"
-            value={f.phone}
-            onChange={set('phone')}
-            placeholder="Phone number"
-          />
+          <div className="fams-phone-group">
+            <div className="fams-phone-prefix">
+              +255
+            </div>
+
+            <input
+              type="tel"
+              inputMode="numeric"
+              className="form-control fams-auth-input fams-phone-input"
+              required
+              value={f.phone}
+              onChange={setPhone}
+              placeholder="712345678"
+              maxLength={9}
+            />
+          </div>
+
+          <div className="fams-validation-help">
+            Enter exactly 9 digits.
+          </div>
         </div>
 
         <div className="mb-4">
@@ -679,10 +831,15 @@ export function Register() {
               type={showPassword ? 'text' : 'password'}
               className="form-control fams-auth-input fams-password-input"
               required
-              minLength={6}
+              minLength={8}
               value={f.password}
               onChange={set('password')}
+              onPaste={blockPasswordClipboard}
+              onCopy={blockPasswordClipboard}
+              onCut={blockPasswordClipboard}
+              onDrop={blockPasswordClipboard}
               placeholder="Create a password"
+              autoComplete="new-password"
             />
 
             <button
@@ -711,6 +868,11 @@ export function Register() {
               />
             </button>
           </div>
+
+          <div className="fams-validation-help">
+            Start with a capital letter and include at least one special character.
+            The word "password" is not allowed.
+          </div>
         </div>
 
         <button
@@ -724,9 +886,7 @@ export function Register() {
               : 'Create account'}
           </Busy>
         </button>
-
       </form>
-
     </Shell>
   );
 }

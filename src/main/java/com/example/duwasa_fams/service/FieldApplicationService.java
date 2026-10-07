@@ -16,6 +16,7 @@ import com.example.duwasa_fams.repository.NotificationRepository;
 import com.example.duwasa_fams.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -78,6 +79,25 @@ public class FieldApplicationService {
                         new RuntimeException(
                                 "Selected department not found"));
 
+        // Check department availability before creating the application
+        int totalSlots =
+                department.getTotalSlots() == null
+                        ? 0
+                        : department.getTotalSlots();
+
+        int occupiedSlots =
+                department.getOccupiedSlots() == null
+                        ? 0
+                        : department.getOccupiedSlots();
+
+        int availableSlots =
+                totalSlots - occupiedSlots;
+
+        if (availableSlots <= 0) {
+            throw new RuntimeException(
+                    "No available slot in the selected department");
+        }
+
         application.setDepartment(department);
         application.setApplicationDate(LocalDateTime.now());
         application.setStatus("DRAFT");
@@ -117,12 +137,24 @@ public class FieldApplicationService {
                     "End date is required");
         }
 
-        if (application.getEndDate()
-                .isBefore(application.getStartDate())) {
+        // Start date must not be in the past
+        LocalDate today = LocalDate.now();
+
+        if (application.getStartDate().isBefore(today)) {
+            throw new RuntimeException(
+                    "Start date cannot be in the past");
+        }
+
+        // End date must be after start date
+        if (!application.getEndDate()
+                .isAfter(application.getStartDate())) {
 
             throw new RuntimeException(
-                    "End date cannot be before start date");
+                    "End date must be after start date");
         }
+
+        // Check department availability again during validation
+        checkAvailableSlot(id);
 
         return application;
     }
@@ -140,6 +172,9 @@ public class FieldApplicationService {
             throw new RuntimeException(
                     "Only draft applications can be submitted");
         }
+
+        // Check slots again immediately before submission
+        checkAvailableSlot(id);
 
         application.setApplicationDate(LocalDateTime.now());
         application.setStatus("PENDING_HR_REVIEW");
@@ -267,6 +302,21 @@ public class FieldApplicationService {
 
             throw new RuntimeException(
                     "Training period is incomplete");
+        }
+
+        // Validate dates before HR forwarding
+        LocalDate today = LocalDate.now();
+
+        if (application.getStartDate().isBefore(today)) {
+            throw new RuntimeException(
+                    "Start date cannot be in the past");
+        }
+
+        if (!application.getEndDate()
+                .isAfter(application.getStartDate())) {
+
+            throw new RuntimeException(
+                    "End date must be after start date");
         }
 
         List<ApplicationDocument> documents =
@@ -567,7 +617,46 @@ public class FieldApplicationService {
                             new RuntimeException(
                                     "Selected department not found"));
 
+            int totalSlots =
+                    department.getTotalSlots() == null
+                            ? 0
+                            : department.getTotalSlots();
+
+            int occupiedSlots =
+                    department.getOccupiedSlots() == null
+                            ? 0
+                            : department.getOccupiedSlots();
+
+            int availableSlots =
+                    totalSlots - occupiedSlots;
+
+            if (availableSlots <= 0) {
+                throw new RuntimeException(
+                        "No available slot in the selected department");
+            }
+
             existingApplication.setDepartment(department);
+        }
+
+        // Validate start date when provided
+        if (application.getStartDate() != null) {
+
+            LocalDate today = LocalDate.now();
+
+            if (application.getStartDate().isBefore(today)) {
+                throw new RuntimeException(
+                        "Start date cannot be in the past");
+            }
+        }
+
+        // Validate end date when both dates are provided
+        if (application.getStartDate() != null
+                && application.getEndDate() != null
+                && !application.getEndDate()
+                .isAfter(application.getStartDate())) {
+
+            throw new RuntimeException(
+                    "End date must be after start date");
         }
 
         existingApplication.setStudent(

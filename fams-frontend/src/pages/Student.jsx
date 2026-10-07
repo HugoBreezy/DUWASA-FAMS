@@ -1,12 +1,33 @@
 import { useState } from 'react';
+
 import { Link, useNavigate } from 'react-router-dom';
+
 import { api, notify } from '../api.js';
+
 import { useAuth } from '../auth.jsx';
-import { Busy, Empty, fmtDate, PageHeader, Spinner, Stat, StatusBadge, useNotifs, usePoll } from '../ui.jsx';
+
+import {
+  Busy,
+  Empty,
+  fmtDate,
+  PageHeader,
+  Spinner,
+  Stat,
+  StatusBadge,
+  useNotifs,
+  usePoll,
+} from '../ui.jsx';
+
 import { ApplicationTable } from './Shared.jsx';
+
 import { LetterCard } from './Details.jsx';
 
-const sortApps = (l) => [...l].sort((a, b) => b.applicationId - a.applicationId);
+
+
+const sortApps = (l) =>
+  [...l].sort((a, b) => b.applicationId - a.applicationId);
+
+
 
 const BLOCKING_APPLICATION_STATUSES = [
   'DRAFT',
@@ -15,18 +36,57 @@ const BLOCKING_APPLICATION_STATUSES = [
   'ACCEPTED',
 ];
 
+
+
 const hasBlockingApplication = (apps = []) =>
   apps.some((a) => BLOCKING_APPLICATION_STATUSES.includes(a.status));
 
+
+
+const getToday = () => {
+  const d = new Date();
+
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+
+  return `${y}-${m}-${day}`;
+};
+
+
+
+const getNextDay = (date) => {
+  if (!date) return getToday();
+
+  const d = new Date(`${date}T00:00:00`);
+
+  d.setDate(d.getDate() + 1);
+
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+
+  return `${y}-${m}-${day}`;
+};
+
+
+
 export function StudentApplications() {
   const { user } = useAuth();
+
+
 
   const { data, loading } = usePoll(
     () => api.studentApplications(user.studentId).then(sortApps),
     [user.studentId]
   );
 
-  const canCreateNewApplication = !hasBlockingApplication(data || []);
+
+
+  const canCreateNewApplication =
+    !hasBlockingApplication(data || []);
+
+
 
   return (
     <>
@@ -42,6 +102,8 @@ export function StudentApplications() {
         )}
       </PageHeader>
 
+
+
       <div className="card">
         {loading && !data ? (
           <Spinner />
@@ -54,11 +116,14 @@ export function StudentApplications() {
               </div>
             )}
 
+
+
             {!data?.some((a) => a.status === 'ACCEPTED') &&
               data?.some((a) =>
-                ['PENDING_HR_REVIEW', 'PENDING_DEPARTMENT_REVIEW'].includes(
-                  a.status
-                )
+                [
+                  'PENDING_HR_REVIEW',
+                  'PENDING_DEPARTMENT_REVIEW',
+                ].includes(a.status)
               ) && (
                 <div className="alert alert-info m-3 mb-0">
                   Your application is currently under review. You cannot create
@@ -66,6 +131,8 @@ export function StudentApplications() {
                   completed or rejected.
                 </div>
               )}
+
+
 
             <ApplicationTable
               apps={data}
@@ -78,14 +145,21 @@ export function StudentApplications() {
   );
 }
 
+
+
 export function StudentDashboard() {
   const { user } = useAuth();
+
   const { unread } = useNotifs();
+
+
 
   const { data: apps, loading } = usePoll(
     () => api.studentApplications(user.studentId).then(sortApps),
     [user.studentId]
   );
+
+
 
   const { data: st } = usePoll(
     () => api.getStudent(user.studentId),
@@ -93,10 +167,17 @@ export function StudentDashboard() {
     60000
   );
 
+
+
   if (loading && !apps) return <Spinner />;
 
+
+
   const n = (f) => apps.filter(f).length;
+
   const cur = apps[0];
+
+
 
   const complete =
     st &&
@@ -105,13 +186,18 @@ export function StudentDashboard() {
     st.course &&
     st.yearOfStudy;
 
+
+
   return (
     <>
       <PageHeader title={`Welcome, ${user.fname || 'student'}`} />
 
+
+
       {st && !complete && (
         <div className="alert alert-warning d-flex justify-content-between align-items-center">
           Complete your profile before applying for a field placement.
+
           <Link
             to="/student/profile"
             className="btn btn-sm btn-warning"
@@ -120,6 +206,8 @@ export function StudentDashboard() {
           </Link>
         </div>
       )}
+
+
 
       <div className="row g-3 mb-3">
         <div className="col-6 col-xl-3">
@@ -130,6 +218,8 @@ export function StudentDashboard() {
           />
         </div>
 
+
+
         <div className="col-6 col-xl-3">
           <Stat
             icon="hourglass-split"
@@ -139,6 +229,8 @@ export function StudentDashboard() {
           />
         </div>
 
+
+
         <div className="col-6 col-xl-3">
           <Stat
             icon="check-circle"
@@ -147,6 +239,8 @@ export function StudentDashboard() {
             tone="#198754"
           />
         </div>
+
+
 
         <div className="col-6 col-xl-3">
           <Stat
@@ -158,15 +252,21 @@ export function StudentDashboard() {
         </div>
       </div>
 
+
+
       <div className="card">
         <div className="card-header bg-white fw-semibold">
           Current application
         </div>
 
+
+
         <div className="card-body">
           {!cur ? (
             <Empty icon="file-earmark-plus">
               You have not applied yet.
+
+
 
               <div className="mt-2">
                 <Link
@@ -184,13 +284,19 @@ export function StudentDashboard() {
                   Department: {cur.department?.departmentName}
                 </div>
 
+
+
                 <div className="text-muted small">
                   {fmtDate(cur.startDate)} – {fmtDate(cur.endDate)}
                 </div>
               </div>
 
+
+
               <div className="d-flex align-items-center gap-3">
                 <StatusBadge status={cur.status} />
+
+
 
                 <Link
                   className="btn btn-outline-primary btn-sm"
@@ -209,19 +315,28 @@ export function StudentDashboard() {
   );
 }
 
+
+
 export function Apply() {
   const { user } = useAuth();
+
   const nav = useNavigate();
+
+
 
   const { data, loading } = usePoll(
     async () => ({
       st: await api.getStudent(user.studentId),
       deps: await api.departments(),
-      apps: await api.studentApplications(user.studentId).then(sortApps),
+      apps: await api
+        .studentApplications(user.studentId)
+        .then(sortApps),
     }),
     [user.studentId],
     60000
   );
+
+
 
   const [f, setF] = useState({
     departmentId: '',
@@ -230,18 +345,23 @@ export function Apply() {
     comments: '',
   });
 
+
+
   const [busy, setBusy] = useState(false);
+
+
 
   if (loading && !data) return <Spinner />;
 
+
+
   const {
     st,
-    deps,
+    deps = [],
     apps = [],
-  } = data || {
-    deps: [],
-    apps: [],
-  };
+  } = data || {};
+
+
 
   const complete =
     st &&
@@ -250,17 +370,24 @@ export function Apply() {
     st.course &&
     st.yearOfStudy;
 
+
+
   const blockingApplication = apps.find((a) =>
     BLOCKING_APPLICATION_STATUSES.includes(a.status)
   );
+
+
 
   if (!complete) {
     return (
       <>
         <PageHeader title="Field Application" />
 
+
+
         <div className="alert alert-warning">
           Complete your academic profile first.{' '}
+
           <Link to="/student/profile">
             Go to profile
           </Link>
@@ -269,16 +396,32 @@ export function Apply() {
     );
   }
 
-  if (blockingApplication) {
-    const isAccepted = blockingApplication.status === 'ACCEPTED';
 
-    const isDraft = blockingApplication.status === 'DRAFT';
+
+  if (blockingApplication) {
+    const isAccepted =
+      blockingApplication.status === 'ACCEPTED';
+
+
+
+    const isDraft =
+      blockingApplication.status === 'DRAFT';
+
+
 
     return (
       <>
         <PageHeader title="Field Application" />
 
-        <div className={`alert ${isAccepted ? 'alert-success' : 'alert-info'}`}>
+
+
+        <div
+          className={`alert ${
+            isAccepted
+              ? 'alert-success'
+              : 'alert-info'
+          }`}
+        >
           <h5 className="alert-heading">
             {isAccepted
               ? 'Application already accepted'
@@ -286,6 +429,8 @@ export function Apply() {
                 ? 'You already have a draft application'
                 : 'Application currently under review'}
           </h5>
+
+
 
           <p className="mb-3">
             {isAccepted
@@ -295,16 +440,40 @@ export function Apply() {
                 : 'Your application is currently being processed. You cannot create another application while it is under review.'}
           </p>
 
+
+
           <Link
             to={`/student/applications/${blockingApplication.applicationId}`}
             className="btn btn-primary btn-sm"
           >
-            {isDraft ? 'Continue application' : 'View application'}
+            {isDraft
+              ? 'Continue application'
+              : 'View application'}
           </Link>
         </div>
       </>
     );
   }
+
+
+
+  const sel = deps.find(
+    (d) =>
+      String(d.departmentId) ===
+      String(f.departmentId)
+  );
+
+
+
+  const hasAvailableDepartment = deps.some(
+    (d) =>
+      d.status === 'ACTIVE' &&
+      (d.totalSlots ?? 0) -
+        (d.occupiedSlots ?? 0) >
+        0
+  );
+
+
 
   const set = (k) => (e) =>
     setF({
@@ -312,49 +481,131 @@ export function Apply() {
       [k]: e.target.value,
     });
 
+
+
   const submit = async (e) => {
     e.preventDefault();
 
-    if (f.endDate < f.startDate) {
+
+
+    const today = getToday();
+
+
+
+    if (!f.departmentId) {
       return notify(
         'warning',
-        'End date cannot be before start date.'
+        'Please select a DUWASA department.'
       );
     }
 
+
+
+    if (!sel || sel.status !== 'ACTIVE') {
+      return notify(
+        'warning',
+        'The selected department is not available.'
+      );
+    }
+
+
+
+    const freeSlots =
+      (sel.totalSlots ?? 0) -
+      (sel.occupiedSlots ?? 0);
+
+
+
+    if (freeSlots <= 0) {
+      return notify(
+        'warning',
+        'The selected department has no available slot.'
+      );
+    }
+
+
+
+    if (!f.startDate) {
+      return notify(
+        'warning',
+        'Please select a start date.'
+      );
+    }
+
+
+
+    if (f.startDate < today) {
+      return notify(
+        'warning',
+        'Start date cannot be in the past.'
+      );
+    }
+
+
+
+    if (!f.endDate) {
+      return notify(
+        'warning',
+        'Please select an end date.'
+      );
+    }
+
+
+
+    if (f.endDate <= f.startDate) {
+      return notify(
+        'warning',
+        'End date must be after the start date.'
+      );
+    }
+
+
+
     setBusy(true);
+
+
 
     try {
       const a = await api.createApplication({
         student: {
           studentId: user.studentId,
         },
+
         department: {
           departmentId: Number(f.departmentId),
         },
+
         startDate: f.startDate,
+
         endDate: f.endDate,
+
         comments: f.comments || null,
       });
+
+
 
       notify(
         'success',
         'Draft created. Upload your documents and submit.'
       );
 
-      nav(`/student/applications/${a.applicationId}`);
+
+
+      nav(
+        `/student/applications/${a.applicationId}`
+      );
     } catch {
       setBusy(false);
     }
   };
 
-  const sel = deps.find(
-    (d) => String(d.departmentId) === String(f.departmentId)
-  );
+
 
   return (
     <>
       <PageHeader title="Field Application" />
+
+
 
       <div className="row g-3">
         <div className="col-lg-8">
@@ -366,41 +617,72 @@ export function Apply() {
               Step 1 of 3 · Department and training period
             </div>
 
+
+
             <div className="card-body">
+              {!hasAvailableDepartment && (
+                <div className="alert alert-warning py-2">
+                  There are currently no DUWASA departments with available
+                  slots. You cannot create an application until a slot becomes
+                  available.
+                </div>
+              )}
+
+
+
               <div className="mb-3">
                 <label className="form-label">
                   DUWASA department
                 </label>
+
+
 
                 <select
                   className="form-select"
                   required
                   value={f.departmentId}
                   onChange={set('departmentId')}
+                  disabled={!hasAvailableDepartment}
                 >
                   <option value="">
                     Select a department
                   </option>
 
+
+
                   {deps.map((d) => {
-                    const free =
+                    const free = Math.max(
+                      0,
                       (d.totalSlots ?? 0) -
-                      (d.occupiedSlots ?? 0);
+                        (d.occupiedSlots ?? 0)
+                    );
+
+
+
+                    const unavailable =
+                      d.status !== 'ACTIVE' ||
+                      free <= 0;
+
+
 
                     return (
                       <option
                         key={d.departmentId}
                         value={d.departmentId}
-                        disabled={d.status !== 'ACTIVE'}
+                        disabled={unavailable}
                       >
-                        {d.departmentName} — {free} slot(s) 
+                        {d.departmentName} — {free} slot(s)
                         {d.status !== 'ACTIVE'
                           ? ` (${d.status})`
-                          : ''}
+                          : free <= 0
+                            ? ' (NO SLOTS AVAILABLE)'
+                            : ''}
                       </option>
                     );
                   })}
                 </select>
+
+
 
                 {sel?.description && (
                   <div className="form-text">
@@ -409,53 +691,79 @@ export function Apply() {
                 )}
               </div>
 
+
+
               <div className="row g-3 mb-3">
                 <div className="col-sm-6">
                   <label className="form-label">
                     Start date
                   </label>
 
+
+
                   <input
                     type="date"
                     className="form-control"
                     required
+                    min={getToday()}
                     value={f.startDate}
                     onChange={set('startDate')}
+                    disabled={!hasAvailableDepartment}
                   />
                 </div>
+
+
 
                 <div className="col-sm-6">
                   <label className="form-label">
                     End date
                   </label>
 
+
+
                   <input
                     type="date"
                     className="form-control"
                     required
-                    min={f.startDate}
+                    min={
+                      f.startDate
+                        ? getNextDay(f.startDate)
+                        : getNextDay(getToday())
+                    }
                     value={f.endDate}
                     onChange={set('endDate')}
+                    disabled={!hasAvailableDepartment}
                   />
                 </div>
               </div>
+
+
 
               <div className="mb-3">
                 <label className="form-label">
                   Comments (optional)
                 </label>
 
+
+
                 <textarea
                   className="form-control"
                   rows={3}
                   value={f.comments}
                   onChange={set('comments')}
+                  disabled={!hasAvailableDepartment}
                 />
               </div>
 
+
+
               <button
+                type="submit"
                 className="btn btn-primary"
-                disabled={busy}
+                disabled={
+                  busy ||
+                  !hasAvailableDepartment
+                }
               >
                 <Busy busy={busy}>
                   {busy
@@ -467,24 +775,34 @@ export function Apply() {
           </form>
         </div>
 
+
+
         <div className="col-lg-4">
           <div className="card">
             <div className="card-header bg-white fw-semibold">
               What happens next
             </div>
 
+
+
             <ol className="card-body small mb-0 ps-4">
               <li className="mb-2">
                 Your draft is saved.
               </li>
 
+
+
               <li className="mb-2">
                 Upload the required documents.
               </li>
 
+
+
               <li className="mb-2">
                 Review the details and submit.
               </li>
+
+
 
               <li>
                 HR reviews, then the department decides.
@@ -497,18 +815,27 @@ export function Apply() {
   );
 }
 
+
+
 export function PlacementLetters() {
   const { user } = useAuth();
+
+
 
   const { data, loading } = usePoll(
     async () => {
       const apps = (
         await api.studentApplications(user.studentId)
-      ).filter((a) => a.status === 'ACCEPTED');
+      ).filter(
+        (a) => a.status === 'ACCEPTED'
+      );
+
+
 
       return Promise.all(
         apps.map(async (a) => ({
           a,
+
           letter: await api
             .letterByApplication(
               a.applicationId,
@@ -518,12 +845,17 @@ export function PlacementLetters() {
         }))
       );
     },
+
     [user.studentId]
   );
+
+
 
   return (
     <>
       <PageHeader title="Placement Letter" />
+
+
 
       {loading && !data ? (
         <Spinner />
@@ -545,6 +877,8 @@ export function PlacementLetters() {
                 Application #{a.applicationId} ·{' '}
                 {a.department?.departmentName}
               </div>
+
+
 
               {letter ? (
                 <LetterCard
