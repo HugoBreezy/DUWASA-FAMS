@@ -44,6 +44,7 @@ const hasBlockingApplication = (apps = []) =>
 
 
 const getToday = () => {
+
   const d = new Date();
 
   const y = d.getFullYear();
@@ -56,6 +57,7 @@ const getToday = () => {
 
 
 const getNextDay = (date) => {
+
   if (!date) return getToday();
 
   const d = new Date(`${date}T00:00:00`);
@@ -72,93 +74,112 @@ const getNextDay = (date) => {
 
 
 export function StudentApplications() {
+
   const { user } = useAuth();
-
-
 
   const { data, loading } = usePoll(
     () => api.studentApplications(user.studentId).then(sortApps),
     [user.studentId]
   );
 
-
-
   const canCreateNewApplication =
     !hasBlockingApplication(data || []);
-
-
 
   return (
     <>
       <PageHeader title="My Applications">
+
         {canCreateNewApplication && (
+
           <Link
             to="/student/apply"
             className="btn btn-primary btn-sm"
           >
+
             <i className="bi bi-plus-lg me-1" />
+
             New application
+
           </Link>
+
         )}
+
       </PageHeader>
 
 
-
       <div className="card">
+
         {loading && !data ? (
+
           <Spinner />
+
         ) : (
+
           <>
+
             {data?.some((a) => a.status === 'ACCEPTED') && (
+
               <div className="alert alert-success m-3 mb-0">
+
                 Your field application has been accepted. You cannot create
                 another application while this placement is active.
+
               </div>
+
             )}
 
 
-
             {!data?.some((a) => a.status === 'ACCEPTED') &&
+
               data?.some((a) =>
                 [
                   'PENDING_HR_REVIEW',
                   'PENDING_DEPARTMENT_REVIEW',
                 ].includes(a.status)
               ) && (
+
                 <div className="alert alert-info m-3 mb-0">
+
                   Your application is currently under review. You cannot create
                   another application until the current application is
                   completed or rejected.
-                </div>
-              )}
 
+                </div>
+
+              )}
 
 
             <ApplicationTable
               apps={data}
               base="/student"
             />
+
           </>
+
         )}
+
       </div>
+
     </>
   );
+
 }
 
 
 
 export function StudentDashboard() {
+
   const { user } = useAuth();
 
   const { unread } = useNotifs();
 
+  const [copiedTrackNumber, setCopiedTrackNumber] = useState(false);
 
 
   const { data: apps, loading } = usePoll(
     () => api.studentApplications(user.studentId).then(sortApps),
     [user.studentId]
   );
-
 
 
   const { data: st } = usePoll(
@@ -168,15 +189,12 @@ export function StudentDashboard() {
   );
 
 
-
   if (loading && !apps) return <Spinner />;
-
 
 
   const n = (f) => apps.filter(f).length;
 
   const cur = apps[0];
-
 
 
   const complete =
@@ -187,172 +205,296 @@ export function StudentDashboard() {
     st.yearOfStudy;
 
 
+  const copyTrackNumber = async () => {
+
+    if (!cur?.trackNumber) return;
+
+    try {
+
+      await navigator.clipboard.writeText(
+        cur.trackNumber
+      );
+
+      setCopiedTrackNumber(true);
+
+      setTimeout(
+        () => setCopiedTrackNumber(false),
+        2000
+      );
+
+    } catch {
+
+      notify(
+        'warning',
+        'Unable to copy Track Number. Please copy it manually.'
+      );
+
+    }
+
+  };
+
 
   return (
     <>
-      <PageHeader title={`Welcome, ${user.fname || 'student'}`} />
-
+      <PageHeader
+        title={`Welcome, ${user.fname || 'student'}`}
+      />
 
 
       {st && !complete && (
+
         <div className="alert alert-warning d-flex justify-content-between align-items-center">
+
           Complete your profile before applying for a field placement.
+
 
           <Link
             to="/student/profile"
             className="btn btn-sm btn-warning"
           >
+
             Complete profile
+
           </Link>
+
         </div>
+
       )}
 
 
-
       <div className="row g-3 mb-3">
+
         <div className="col-6 col-xl-3">
+
           <Stat
             icon="folder2-open"
             label="Total applications"
             value={apps.length}
           />
+
         </div>
 
 
-
         <div className="col-6 col-xl-3">
+
           <Stat
             icon="hourglass-split"
             label="In review"
             value={n((a) => a.status.startsWith('PENDING'))}
             tone="#b58100"
           />
+
         </div>
 
 
-
         <div className="col-6 col-xl-3">
+
           <Stat
             icon="check-circle"
             label="Accepted"
             value={n((a) => a.status === 'ACCEPTED')}
             tone="#198754"
           />
+
         </div>
 
 
-
         <div className="col-6 col-xl-3">
+
           <Stat
             icon="bell"
             label="Unread notifications"
             value={unread}
             tone="#DC3545"
           />
+
         </div>
+
       </div>
 
 
-
       <div className="card">
+
         <div className="card-header bg-white fw-semibold">
+
           Current application
+
         </div>
 
 
-
         <div className="card-body">
+
           {!cur ? (
+
             <Empty icon="file-earmark-plus">
+
               You have not applied yet.
 
 
-
               <div className="mt-2">
+
                 <Link
                   to="/student/apply"
                   className="btn btn-primary"
                 >
-                  Start field application
-                </Link>
-              </div>
-            </Empty>
-          ) : (
-            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
-              <div>
-                <div className="fw-semibold">
-                  Department: {cur.department?.departmentName}
-                </div>
 
+                  Start field application
+
+                </Link>
+
+              </div>
+
+            </Empty>
+
+          ) : (
+
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
+
+              <div>
+
+                <div className="fw-semibold">
+
+                  Department: {cur.department?.departmentName}
+
+                </div>
 
 
                 <div className="text-muted small">
+
                   {fmtDate(cur.startDate)} – {fmtDate(cur.endDate)}
+
                 </div>
+
+
+                {cur.trackNumber && (
+
+                  <div className="mt-2">
+
+                    <div className="text-muted small fw-semibold">
+
+                      Track Number
+
+                    </div>
+
+
+                    <div className="d-flex align-items-center gap-2 flex-wrap mt-1">
+
+                      <span
+                        className="fw-semibold"
+                        style={{
+                          letterSpacing: '0.3px'
+                        }}
+                      >
+
+                        {cur.trackNumber}
+
+                      </span>
+
+
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={copyTrackNumber}
+                      >
+
+                        <i
+                          className={`bi ${
+                            copiedTrackNumber
+                              ? 'bi-check-lg'
+                              : 'bi-clipboard'
+                          } me-1`}
+                        />
+
+                        {copiedTrackNumber
+                          ? 'Copied'
+                          : 'Copy'}
+
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                )}
+
               </div>
 
 
-
               <div className="d-flex align-items-center gap-3">
-                <StatusBadge status={cur.status} />
 
+                <StatusBadge status={cur.status} />
 
 
                 <Link
                   className="btn btn-outline-primary btn-sm"
                   to={`/student/applications/${cur.applicationId}`}
                 >
+
                   {cur.status === 'DRAFT'
                     ? 'Continue'
                     : 'View details'}
+
                 </Link>
+
               </div>
+
             </div>
+
           )}
+
         </div>
+
       </div>
+
     </>
   );
+
 }
 
 
 
 export function Apply() {
+
   const { user } = useAuth();
 
   const nav = useNavigate();
 
 
-
   const { data, loading } = usePoll(
+
     async () => ({
+
       st: await api.getStudent(user.studentId),
+
       deps: await api.departments(),
+
       apps: await api
         .studentApplications(user.studentId)
         .then(sortApps),
+
     }),
+
     [user.studentId],
+
     60000
+
   );
 
 
-
   const [f, setF] = useState({
+
     departmentId: '',
     startDate: '',
     endDate: '',
     comments: '',
-  });
 
+  });
 
 
   const [busy, setBusy] = useState(false);
 
 
-
   if (loading && !data) return <Spinner />;
-
 
 
   const {
@@ -362,7 +504,6 @@ export function Apply() {
   } = data || {};
 
 
-
   const complete =
     st &&
     st.registrationNumber &&
@@ -371,48 +512,55 @@ export function Apply() {
     st.yearOfStudy;
 
 
-
   const blockingApplication = apps.find((a) =>
     BLOCKING_APPLICATION_STATUSES.includes(a.status)
   );
 
 
-
   if (!complete) {
+
     return (
+
       <>
+
         <PageHeader title="Field Application" />
 
 
-
         <div className="alert alert-warning">
+
           Complete your academic profile first.{' '}
 
+
           <Link to="/student/profile">
+
             Go to profile
+
           </Link>
+
         </div>
+
       </>
+
     );
+
   }
 
 
-
   if (blockingApplication) {
+
     const isAccepted =
       blockingApplication.status === 'ACCEPTED';
-
 
 
     const isDraft =
       blockingApplication.status === 'DRAFT';
 
 
-
     return (
-      <>
-        <PageHeader title="Field Application" />
 
+      <>
+
+        <PageHeader title="Field Application" />
 
 
         <div
@@ -422,39 +570,47 @@ export function Apply() {
               : 'alert-info'
           }`}
         >
+
           <h5 className="alert-heading">
+
             {isAccepted
               ? 'Application already accepted'
               : isDraft
                 ? 'You already have a draft application'
                 : 'Application currently under review'}
+
           </h5>
 
 
-
           <p className="mb-3">
+
             {isAccepted
               ? 'Your field placement application has already been accepted. You cannot create another application.'
               : isDraft
                 ? 'You already have a draft application. Continue with that application instead of creating a new one.'
                 : 'Your application is currently being processed. You cannot create another application while it is under review.'}
-          </p>
 
+          </p>
 
 
           <Link
             to={`/student/applications/${blockingApplication.applicationId}`}
             className="btn btn-primary btn-sm"
           >
+
             {isDraft
               ? 'Continue application'
               : 'View application'}
-          </Link>
-        </div>
-      </>
-    );
-  }
 
+          </Link>
+
+        </div>
+
+      </>
+
+    );
+
+  }
 
 
   const sel = deps.find(
@@ -462,7 +618,6 @@ export function Apply() {
       String(d.departmentId) ===
       String(f.departmentId)
   );
-
 
 
   const hasAvailableDepartment = deps.some(
@@ -474,7 +629,6 @@ export function Apply() {
   );
 
 
-
   const set = (k) => (e) =>
     setF({
       ...f,
@@ -482,32 +636,32 @@ export function Apply() {
     });
 
 
-
   const submit = async (e) => {
-    e.preventDefault();
 
+    e.preventDefault();
 
 
     const today = getToday();
 
 
-
     if (!f.departmentId) {
+
       return notify(
         'warning',
         'Please select a DUWASA department.'
       );
+
     }
 
 
-
     if (!sel || sel.status !== 'ACTIVE') {
+
       return notify(
         'warning',
         'The selected department is not available.'
       );
-    }
 
+    }
 
 
     const freeSlots =
@@ -515,58 +669,63 @@ export function Apply() {
       (sel.occupiedSlots ?? 0);
 
 
-
     if (freeSlots <= 0) {
+
       return notify(
         'warning',
         'The selected department has no available slot.'
       );
+
     }
 
 
-
     if (!f.startDate) {
+
       return notify(
         'warning',
         'Please select a start date.'
       );
+
     }
 
 
-
     if (f.startDate < today) {
+
       return notify(
         'warning',
         'Start date cannot be in the past.'
       );
+
     }
 
 
-
     if (!f.endDate) {
+
       return notify(
         'warning',
         'Please select an end date.'
       );
+
     }
 
 
-
     if (f.endDate <= f.startDate) {
+
       return notify(
         'warning',
         'End date must be after the start date.'
       );
-    }
 
+    }
 
 
     setBusy(true);
 
 
-
     try {
+
       const a = await api.createApplication({
+
         student: {
           studentId: user.studentId,
         },
@@ -580,8 +739,8 @@ export function Apply() {
         endDate: f.endDate,
 
         comments: f.comments || null,
-      });
 
+      });
 
 
       notify(
@@ -590,51 +749,64 @@ export function Apply() {
       );
 
 
-
       nav(
         `/student/applications/${a.applicationId}`
       );
+
     } catch {
+
       setBusy(false);
+
     }
+
   };
 
 
-
   return (
+
     <>
+
       <PageHeader title="Field Application" />
 
 
-
       <div className="row g-3">
+
         <div className="col-lg-8">
+
           <form
             className="card"
             onSubmit={submit}
           >
+
             <div className="card-header bg-white fw-semibold">
+
               Step 1 of 3 · Department and training period
+
             </div>
 
 
-
             <div className="card-body">
+
               {!hasAvailableDepartment && (
+
                 <div className="alert alert-warning py-2">
+
                   There are currently no DUWASA departments with available
                   slots. You cannot create an application until a slot becomes
                   available.
+
                 </div>
+
               )}
 
 
-
               <div className="mb-3">
-                <label className="form-label">
-                  DUWASA department
-                </label>
 
+                <label className="form-label">
+
+                  DUWASA department
+
+                </label>
 
 
                 <select
@@ -644,13 +816,16 @@ export function Apply() {
                   onChange={set('departmentId')}
                   disabled={!hasAvailableDepartment}
                 >
+
                   <option value="">
+
                     Select a department
+
                   </option>
 
 
-
                   {deps.map((d) => {
+
                     const free = Math.max(
                       0,
                       (d.totalSlots ?? 0) -
@@ -658,47 +833,58 @@ export function Apply() {
                     );
 
 
-
                     const unavailable =
                       d.status !== 'ACTIVE' ||
                       free <= 0;
 
 
-
                     return (
+
                       <option
                         key={d.departmentId}
                         value={d.departmentId}
                         disabled={unavailable}
                       >
+
                         {d.departmentName} — {free} slot(s)
+
                         {d.status !== 'ACTIVE'
                           ? ` (${d.status})`
                           : free <= 0
                             ? ' (NO SLOTS AVAILABLE)'
                             : ''}
+
                       </option>
+
                     );
+
                   })}
+
                 </select>
 
 
-
                 {sel?.description && (
+
                   <div className="form-text">
+
                     {sel.description}
+
                   </div>
+
                 )}
+
               </div>
 
 
-
               <div className="row g-3 mb-3">
-                <div className="col-sm-6">
-                  <label className="form-label">
-                    Start date
-                  </label>
 
+                <div className="col-sm-6">
+
+                  <label className="form-label">
+
+                    Start date
+
+                  </label>
 
 
                   <input
@@ -710,15 +896,17 @@ export function Apply() {
                     onChange={set('startDate')}
                     disabled={!hasAvailableDepartment}
                   />
+
                 </div>
 
 
-
                 <div className="col-sm-6">
-                  <label className="form-label">
-                    End date
-                  </label>
 
+                  <label className="form-label">
+
+                    End date
+
+                  </label>
 
 
                   <input
@@ -734,16 +922,19 @@ export function Apply() {
                     onChange={set('endDate')}
                     disabled={!hasAvailableDepartment}
                   />
+
                 </div>
+
               </div>
 
 
-
               <div className="mb-3">
-                <label className="form-label">
-                  Comments (optional)
-                </label>
 
+                <label className="form-label">
+
+                  Comments (optional)
+
+                </label>
 
 
                 <textarea
@@ -753,8 +944,8 @@ export function Apply() {
                   onChange={set('comments')}
                   disabled={!hasAvailableDepartment}
                 />
-              </div>
 
+              </div>
 
 
               <button
@@ -765,75 +956,104 @@ export function Apply() {
                   !hasAvailableDepartment
                 }
               >
+
                 <Busy busy={busy}>
+
                   {busy
                     ? 'Creating draft...'
                     : 'Save and continue'}
-                </Busy>
-              </button>
-            </div>
-          </form>
-        </div>
 
+                </Busy>
+
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
 
 
         <div className="col-lg-4">
+
           <div className="card">
+
             <div className="card-header bg-white fw-semibold">
+
               What happens next
+
             </div>
 
 
-
             <ol className="card-body small mb-0 ps-4">
+
               <li className="mb-2">
+
                 Your draft is saved.
+
               </li>
 
 
-
               <li className="mb-2">
+
                 Upload the required documents.
-              </li>
 
+              </li>
 
 
               <li className="mb-2">
-                Review the details and submit.
-              </li>
 
+                Review the details and submit.
+
+              </li>
 
 
               <li>
+
                 HR reviews, then the department decides.
+
               </li>
+
             </ol>
+
           </div>
+
         </div>
+
       </div>
+
     </>
+
   );
+
 }
 
 
 
 export function PlacementLetters() {
+
   const { user } = useAuth();
 
 
-
   const { data, loading } = usePoll(
+
     async () => {
+
       const apps = (
+
         await api.studentApplications(user.studentId)
+
       ).filter(
+
         (a) => a.status === 'ACCEPTED'
+
       );
 
 
-
       return Promise.all(
+
         apps.map(async (a) => ({
+
           a,
 
           letter: await api
@@ -842,58 +1062,89 @@ export function PlacementLetters() {
               { silent: true }
             )
             .catch(() => null),
+
         }))
+
       );
+
     },
 
     [user.studentId]
+
   );
 
 
-
   return (
+
     <>
+
       <PageHeader title="Placement Letter" />
 
 
-
       {loading && !data ? (
+
         <Spinner />
+
       ) : !data?.length ? (
+
         <div className="card">
+
           <Empty icon="file-earmark-pdf">
+
             Your placement letter appears here after a department
             accepts your application.
+
           </Empty>
+
         </div>
+
       ) : (
+
         data.map(({ a, letter }) => (
+
           <div
             className="card mb-3"
             key={a.applicationId}
           >
+
             <div className="card-body">
+
               <div className="mb-2 text-muted small">
+
                 Application #{a.applicationId} ·{' '}
+
                 {a.department?.departmentName}
+
               </div>
 
 
-
               {letter ? (
+
                 <LetterCard
                   appId={a.applicationId}
                   letter={letter}
                 />
+
               ) : (
+
                 <span className="text-muted">
+
                   The letter is being prepared.
+
                 </span>
+
               )}
+
             </div>
+
           </div>
+
         ))
+
       )}
+
     </>
+
   );
+
 }

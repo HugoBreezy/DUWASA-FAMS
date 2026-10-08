@@ -78,6 +78,23 @@ public class FieldApplicationController {
     }
 
     // =========================================================
+    // GET APPLICATION BY TRACK NUMBER
+    // =========================================================
+
+    @GetMapping("/track/{trackNumber}")
+    public ResponseEntity<FieldApplication>
+    getApplicationByTrackNumber(
+            @PathVariable String trackNumber) {
+
+        return fieldApplicationService
+                .getApplicationByTrackNumber(trackNumber)
+                .map(ResponseEntity::ok)
+                .orElse(
+                        ResponseEntity.notFound().build()
+                );
+    }
+
+    // =========================================================
     // GET APPLICATION BY ID
     // =========================================================
 

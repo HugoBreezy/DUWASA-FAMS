@@ -4,9 +4,12 @@ import com.example.duwasa_fams.entity.FieldApplication;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface FieldApplicationRepository
         extends JpaRepository<FieldApplication, Integer> {
 
     List<FieldApplication> findByStudent_StudentId(Integer studentId);
+
+    Optional<FieldApplication> findByTrackNumber(String trackNumber);
 }

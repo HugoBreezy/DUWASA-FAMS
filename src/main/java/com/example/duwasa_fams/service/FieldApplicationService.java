@@ -54,6 +54,33 @@ public class FieldApplicationService {
     }
 
     // =========================================================
+    // GENERATE TRACK NUMBER
+    // =========================================================
+
+    private String generateTrackNumber(FieldApplication application) {
+
+        if (application.getApplicationId() == null) {
+            throw new RuntimeException(
+                    "Application ID is required to generate Track Number"
+            );
+        }
+
+        int year;
+
+        if (application.getApplicationDate() != null) {
+            year = application.getApplicationDate().getYear();
+        } else {
+            year = LocalDate.now().getYear();
+        }
+
+        return String.format(
+                "DUWASA-TRK-%d-%06d",
+                year,
+                application.getApplicationId()
+        );
+    }
+
+    // =========================================================
     // CREATE APPLICATION
     // =========================================================
 
@@ -100,7 +127,20 @@ public class FieldApplicationService {
 
         application.setDepartment(department);
         application.setApplicationDate(LocalDateTime.now());
+
+        // New application starts as DRAFT
         application.setStatus("DRAFT");
+
+        /*
+         * Track Number is intentionally NOT generated here.
+         *
+         * The application must first:
+         * 1. Be created as DRAFT
+         * 2. Have the required document uploaded
+         * 3. Be submitted successfully
+         *
+         * Track Number will be generated during submitApplication().
+         */
 
         return fieldApplicationRepository.save(application);
     }
@@ -175,6 +215,22 @@ public class FieldApplicationService {
 
         // Check slots again immediately before submission
         checkAvailableSlot(id);
+
+        /*
+         * Track Number is generated ONLY when the student
+         * successfully submits the application.
+         *
+         * This means a DRAFT application does not have
+         * a Track Number.
+         */
+
+        if (application.getTrackNumber() == null
+                || application.getTrackNumber().isBlank()) {
+
+            application.setTrackNumber(
+                    generateTrackNumber(application)
+            );
+        }
 
         application.setApplicationDate(LocalDateTime.now());
         application.setStatus("PENDING_HR_REVIEW");
@@ -581,6 +637,21 @@ public class FieldApplicationService {
     }
 
     // =========================================================
+    // GET APPLICATION BY TRACK NUMBER
+    // =========================================================
+
+    public Optional<FieldApplication> getApplicationByTrackNumber(
+            String trackNumber) {
+
+        if (trackNumber == null || trackNumber.isBlank()) {
+            return Optional.empty();
+        }
+
+        return fieldApplicationRepository
+                .findByTrackNumber(trackNumber.trim());
+    }
+
+    // =========================================================
     // GET APPLICATIONS FOR STUDENT
     // =========================================================
 
@@ -673,6 +744,16 @@ public class FieldApplicationService {
 
         existingApplication.setComments(
                 application.getComments());
+
+        /*
+         * Track Number must NEVER be generated during update.
+         *
+         * If the application is still DRAFT, it remains
+         * without a Track Number.
+         *
+         * If it already has a Track Number because it was
+         * submitted, the existing Track Number remains unchanged.
+         */
 
         return fieldApplicationRepository.save(
                 existingApplication);

@@ -41,4 +41,7 @@ public class FieldApplication {
 
     @Column(name = "comments")
     private String comments;
+
+    @Column(name = "track_number", unique = true)
+    private String trackNumber;
 }
